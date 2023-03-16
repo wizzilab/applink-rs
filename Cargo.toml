@@ -1,0 +1,24 @@
+[package]
+name = "applink"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+rocket = "0.5.0-rc.2"
+serde_json = "1"
+serde = { version = "1", features = ["derive"] }
+hex = "0.4"
+rumqttc = "0.20"
+tokio = { version = "1", features = ["full"] }
+tokio-stream = { version = "0.1", features = ["io-util", "fs"] }
+tokio-util = "0.7"
+log = "0.4"
+
+[[example]]
+name = "read_uid"
+
+[dev_dependencies]
+clap = { version = "4", features = ["derive"] }
+
