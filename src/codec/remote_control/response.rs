@@ -61,7 +61,6 @@ impl From<raw::Response> for Response {
 }
 
 pub fn parse(raw: &[u8]) -> Result<Response, serde_json::Error> {
-    println!("raw: {:?}", std::str::from_utf8(raw));
     let raw: raw::Response = serde_json::from_slice(raw)?;
     Ok(raw.into())
 }

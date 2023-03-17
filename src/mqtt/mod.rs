@@ -123,7 +123,6 @@ impl ClientBackend {
                         Unsolicited::BadFormat(BadFormat::Report(data.to_vec()))
                     }
                 } else if topic.starts_with(&remote_control_response_topic) {
-                    println!("Received: {}", topic);
                     if let Ok(response) = remote_control::response::parse(&data) {
                         Unsolicited::RemoteControl(response)
                     } else {
@@ -218,7 +217,6 @@ impl Client {
         tokio::spawn(async move {
             let mut listeners = dispatcher_listeners.lock().await;
             while let Some(unsolicited) = unsolicited_rx.recv().await {
-                println!("Dispatching unsolicited: {:?}", unsolicited);
                 for listener in listeners.iter_mut() {
                     listener.send(unsolicited.clone()).await.unwrap();
                 }
@@ -259,7 +257,6 @@ impl Client {
             .map_err(RequestError::SendBackendDead)?;
 
         // Wait for response
-        println!("Waiting for response");
         while let Some(unsolicited) = rx.recv().await {
             if let Unsolicited::RemoteControl(response) = unsolicited {
                 return Ok(response);
