@@ -116,6 +116,9 @@ impl ClientBackend {
                 let report_topic = format!("/applink/{}/report", self.company);
                 let remote_control_response_topic =
                     format!("/applink/{}/remotectrl/response/", self.company);
+                let remote_control_request_topic =
+                    format!("/applink/{}/remotectrl/request/", self.company);
+                let macro_topic = format!("/applink/{}/macro", self.company);
                 if topic.starts_with(&report_topic) {
                     if let Ok(report) = report::parse(&data) {
                         Unsolicited::Report(report)
@@ -128,6 +131,11 @@ impl ClientBackend {
                     } else {
                         Unsolicited::BadFormat(BadFormat::RemoteControl(data.to_vec()))
                     }
+                } else if topic.starts_with(&remote_control_request_topic)
+                    || topic.starts_with(&macro_topic)
+                {
+                    // TODO
+                    return MaintainResult::Continue;
                 } else {
                     log::error!("Unknown topic: {}", topic);
                     return MaintainResult::Continue;
@@ -215,10 +223,16 @@ impl Client {
         // Start listener dispatcher
         let dispatcher_listeners = listeners.clone();
         tokio::spawn(async move {
-            let mut listeners = dispatcher_listeners.lock().await;
             while let Some(unsolicited) = unsolicited_rx.recv().await {
-                for listener in listeners.iter_mut() {
-                    listener.send(unsolicited.clone()).await.unwrap();
+                let mut listeners = dispatcher_listeners.lock().await;
+                let mut to_rm = vec![];
+                for (i, listener) in listeners.iter_mut().enumerate() {
+                    if listener.send(unsolicited.clone()).await.is_err() {
+                        to_rm.push(i);
+                    }
+                }
+                for i in to_rm.into_iter().rev() {
+                    listeners.remove(i);
                 }
             }
         });
@@ -259,7 +273,9 @@ impl Client {
         // Wait for response
         while let Some(unsolicited) = rx.recv().await {
             if let Unsolicited::RemoteControl(response) = unsolicited {
-                return Ok(response);
+                if response.meta.rid == request_id {
+                    return Ok(response);
+                }
             }
         }
         Err(RequestError::ReceiveBackendDead)

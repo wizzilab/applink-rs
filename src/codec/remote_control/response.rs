@@ -9,7 +9,8 @@ pub enum Value {
 
 #[derive(Serialize, Debug, Deserialize, Clone, PartialEq)]
 pub struct Message {
-    pub value: Value,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub value: Option<Value>,
 }
 
 #[derive(Serialize, Debug, Deserialize, Clone, PartialEq)]
@@ -40,6 +41,24 @@ pub mod raw {
     pub struct Response {
         pub meta: super::Meta,
         pub msg: RawMessage,
+    }
+
+    #[test]
+    fn write_response() {
+        let response = "{\"meta\":{\"uid\":\"001BC50C71006FD7\",\"guid\":\"001BC50C71004102\",\"gmuid\":\"001BC50C71004102\",\"rid\":\"0-1\"},\"msg\":{\"status\":\"OK\"}}";
+        let raw: Response = serde_json::from_str(response).unwrap();
+        assert_eq!(
+            raw,
+            Response {
+                meta: super::Meta {
+                    uid: Some("001BC50C71006FD7".to_string()),
+                    guid: Some("001BC50C71004102".to_string()),
+                    gmuid: Some("001BC50C71004102".to_string()),
+                    rid: "0-1".to_string(),
+                },
+                msg: RawMessage::Ok(super::Message { value: None }),
+            }
+        );
     }
 }
 
