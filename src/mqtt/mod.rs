@@ -195,7 +195,7 @@ pub struct Client {
     command_tx: mpsc::Sender<Command>,
     company: String,
     listeners: Arc<Mutex<Vec<mpsc::Sender<Unsolicited>>>>,
-    // TODO Increment on clone
+    root_id: usize,
     id: usize,
     request_sn: usize,
 }
@@ -241,6 +241,7 @@ impl Client {
             command_tx,
             company,
             listeners,
+            root_id: rand::random(),
             id: 0,
             request_sn: 0,
         })
@@ -248,7 +249,7 @@ impl Client {
 
     fn request_id(&mut self) -> String {
         self.request_sn += 1;
-        format!("{}-{}", self.id, self.request_sn)
+        format!("{}-{}-{}", self.root_id, self.id, self.request_sn)
     }
 
     pub async fn remote_control(
@@ -285,5 +286,18 @@ impl Client {
         let (tx, rx) = mpsc::channel(1);
         self.listeners.lock().await.push(tx);
         rx
+    }
+}
+
+impl Clone for Client {
+    fn clone(&self) -> Self {
+        Self {
+            command_tx: self.command_tx.clone(),
+            company: self.company.clone(),
+            listeners: self.listeners.clone(),
+            root_id: self.root_id,
+            id: self.id + 1,
+            request_sn: 0,
+        }
     }
 }
