@@ -1,19 +1,6 @@
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Debug, Deserialize, Clone, PartialEq)]
-#[serde(untagged)]
-pub enum Value {
-    Number(u32),
-    Binary { hex: String },
-}
-
-#[derive(Serialize, Debug, Deserialize, Clone, PartialEq)]
-pub struct Message {
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub value: Option<Value>,
-}
-
-#[derive(Serialize, Debug, Deserialize, Clone, PartialEq)]
 pub struct Meta {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub uid: Option<String>,
@@ -28,11 +15,24 @@ pub mod raw {
     use serde::{Deserialize, Serialize};
 
     #[derive(Serialize, Debug, Deserialize, Clone, PartialEq)]
+    #[serde(untagged)]
+    pub enum Value {
+        Number(u32),
+        Binary { hex: String },
+    }
+
+    #[derive(Serialize, Debug, Deserialize, Clone, PartialEq)]
+    pub struct Message {
+        #[serde(skip_serializing_if = "Option::is_none")]
+        pub value: Option<Value>,
+    }
+
+    #[derive(Serialize, Debug, Deserialize, Clone, PartialEq)]
     #[serde(tag = "status")]
     #[serde(rename_all = "UPPERCASE")]
     pub enum RawMessage {
         #[serde(rename(serialize = "OK", deserialize = "OK"))]
-        Ok(super::Message),
+        Ok(Message),
         #[serde(rename(serialize = "ERROR", deserialize = "ERR"))]
         Err { err_msg: String },
     }
@@ -56,9 +56,44 @@ pub mod raw {
                     gmuid: Some("001BC50C71004102".to_string()),
                     rid: "0-1".to_string(),
                 },
-                msg: RawMessage::Ok(super::Message { value: None }),
+                msg: RawMessage::Ok(Message { value: None }),
             }
         );
+    }
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum Value {
+    Number(u32),
+    Binary(Vec<u8>),
+}
+
+impl TryFrom<raw::Value> for Value {
+    type Error = hex::FromHexError;
+
+    fn try_from(raw: raw::Value) -> Result<Self, Self::Error> {
+        match raw {
+            raw::Value::Number(n) => Ok(Value::Number(n)),
+            raw::Value::Binary { hex } => Ok(Value::Binary(hex::decode(hex)?)),
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct Message {
+    pub value: Option<Value>,
+}
+
+impl TryFrom<raw::Message> for Message {
+    type Error = hex::FromHexError;
+
+    fn try_from(raw: raw::Message) -> Result<Self, Self::Error> {
+        let raw::Message { value } = raw;
+        let value = match value {
+            Some(value) => Some(value.try_into()?),
+            None => None,
+        };
+        Ok(Self { value })
     }
 }
 
@@ -68,18 +103,38 @@ pub struct Response {
     pub msg: Result<Message, String>,
 }
 
-impl From<raw::Response> for Response {
-    fn from(raw: raw::Response) -> Self {
+impl TryFrom<raw::Response> for Response {
+    type Error = hex::FromHexError;
+    fn try_from(raw: raw::Response) -> Result<Self, Self::Error> {
         let raw::Response { meta, msg } = raw;
         let msg = match msg {
-            raw::RawMessage::Ok(msg) => Ok(msg),
+            raw::RawMessage::Ok(msg) => Ok(msg.try_into().unwrap()),
             raw::RawMessage::Err { err_msg } => Err(err_msg),
         };
-        Self { meta, msg }
+        Ok(Self { meta, msg })
     }
 }
 
-pub fn parse(raw: &[u8]) -> Result<Response, serde_json::Error> {
-    let raw: raw::Response = serde_json::from_slice(raw)?;
-    Ok(raw.into())
+#[derive(Debug)]
+pub enum Error {
+    Json(serde_json::Error),
+    Hex(hex::FromHexError),
+}
+
+impl From<serde_json::Error> for Error {
+    fn from(err: serde_json::Error) -> Self {
+        Error::Json(err)
+    }
+}
+
+impl From<hex::FromHexError> for Error {
+    fn from(err: hex::FromHexError) -> Self {
+        Error::Hex(err)
+    }
+}
+
+pub fn parse(raw: &str) -> Result<Response, Error> {
+    let raw: raw::Response = serde_json::from_str(raw)?;
+    let response = raw.try_into()?;
+    Ok(response)
 }

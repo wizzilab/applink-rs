@@ -37,19 +37,19 @@ impl From<serde_json::Error> for Error {
 }
 
 impl Credentials {
-    pub fn new(server: &str, username: &str, password: &str) -> Self {
+    pub fn new(server: String, username: String, password: String) -> Self {
         Self {
-            server: server.to_string(),
-            username: username.to_string(),
-            password: password.to_string(),
+            server,
+            username,
+            password,
         }
     }
 
-    pub fn dash7board(username: &str, password: &str) -> Self {
+    pub fn dash7board(username: String, password: String) -> Self {
         Self {
             server: "dash7board.wizzilab.com".to_string(),
-            username: username.to_string(),
-            password: password.to_string(),
+            username,
+            password,
         }
     }
 
@@ -81,29 +81,23 @@ impl Credentials {
 }
 
 #[cfg(test)]
-macro_rules! tokio_with_creds {
-    ([$creds:ident] $block:block) => {
-        use tokio::runtime::Runtime;
-        let rt = Runtime::new().unwrap();
+pub mod test {
+    use super::*;
+    use crate::common::test::load_config;
 
-        rt.block_on(async {
-            let conf_path = format!("{}/test_credentials.json", env!("CARGO_MANIFEST_DIR"));
-            let conf = tokio::fs::read_to_string(conf_path).await.unwrap();
-            let conf: std::collections::HashMap<String, String> =
-                serde_json::from_str(&conf).unwrap();
-            let username = conf.get("username").unwrap();
-            let password = conf.get("password").unwrap();
-            let $creds = Credentials::dash7board(username, password);
-            $block
-        });
-    };
-}
+    async fn creds() -> Credentials {
+        let conf = load_config().await;
+        Credentials::new(
+            conf.http_server.clone(),
+            conf.username.clone(),
+            conf.password.clone(),
+        )
+    }
 
-#[test]
-fn get_site_devices() {
-    tokio_with_creds!(
-        [creds] {
+    #[tokio::test]
+    async fn get_site_devices() {
+        let creds = creds().await;
         let devices = creds.get_site_devices(1).await.unwrap();
         assert_eq!(devices, vec![Uid::from("001BC50C70010EDE".to_string())]);
-    });
+    }
 }

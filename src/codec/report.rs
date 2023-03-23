@@ -344,7 +344,7 @@ impl TryFrom<raw::RawReport> for RawReport {
     }
 }
 
-pub fn parse(data: &[u8]) -> Result<Report, ReportParseError> {
-    let raw_report: raw::Report = serde_json::from_slice(data).map_err(ReportParseError::Json)?;
+pub fn parse(data: &str) -> Result<Report, ReportParseError> {
+    let raw_report: raw::Report = serde_json::from_str(data).map_err(ReportParseError::Json)?;
     raw_report.try_into()
 }

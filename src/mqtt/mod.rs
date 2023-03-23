@@ -1,4 +1,4 @@
-use crate::codec::{remote_control, report};
+use crate::codec::{remote_control, report, wizzi_macro};
 use std::sync::Arc;
 use tokio::sync::{mpsc, Mutex};
 use tokio_util::sync::PollSender;
@@ -10,8 +10,10 @@ pub enum Command {
 
 #[derive(Debug, Clone)]
 pub enum BadFormat {
-    Report(Vec<u8>),
-    RemoteControl(Vec<u8>),
+    Utf8 { topic: String, data: Vec<u8> },
+    Report(String),
+    RemoteControl(String),
+    Macro(String),
 }
 
 #[derive(Debug, Clone)]
@@ -20,6 +22,7 @@ pub enum Unsolicited {
     Disconnect,
     Report(report::Report),
     RemoteControl(remote_control::response::Response),
+    Macro(wizzi_macro::response::Response),
     BadFormat(BadFormat),
 }
 
@@ -112,33 +115,49 @@ impl ClientBackend {
         let to_send = match packet {
             rumqttc::Event::Incoming(rumqttc::Packet::Publish(publish)) => {
                 let topic = publish.topic;
-                let data = publish.payload;
-                let report_topic = format!("/applink/{}/report", self.company);
-                let remote_control_response_topic =
-                    format!("/applink/{}/remotectrl/response/", self.company);
-                let remote_control_request_topic =
-                    format!("/applink/{}/remotectrl/request/", self.company);
-                let macro_topic = format!("/applink/{}/macro", self.company);
-                if topic.starts_with(&report_topic) {
-                    if let Ok(report) = report::parse(&data) {
-                        Unsolicited::Report(report)
-                    } else {
-                        Unsolicited::BadFormat(BadFormat::Report(data.to_vec()))
+                match std::str::from_utf8(&publish.payload) {
+                    Ok(data) => {
+                        let report_topic = format!("/applink/{}/report", self.company);
+                        let remote_control_response_topic =
+                            format!("/applink/{}/remotectrl/response/", self.company);
+                        let remote_control_request_topic =
+                            format!("/applink/{}/remotectrl/request/", self.company);
+                        let macro_request_topic =
+                            format!("/applink/{}/macro/request/", self.company);
+                        let macro_response_topic =
+                            format!("/applink/{}/macro/response/", self.company);
+                        if topic.starts_with(&report_topic) {
+                            if let Ok(report) = report::parse(data) {
+                                Unsolicited::Report(report)
+                            } else {
+                                Unsolicited::BadFormat(BadFormat::Report(data.to_string()))
+                            }
+                        } else if topic.starts_with(&remote_control_response_topic) {
+                            if let Ok(response) = remote_control::response::parse(data) {
+                                Unsolicited::RemoteControl(response)
+                            } else {
+                                Unsolicited::BadFormat(BadFormat::RemoteControl(data.to_string()))
+                            }
+                        } else if topic.starts_with(&macro_response_topic) {
+                            if let Ok(response) = wizzi_macro::Response::parse(data) {
+                                Unsolicited::Macro(response)
+                            } else {
+                                Unsolicited::BadFormat(BadFormat::Macro(data.to_string()))
+                            }
+                        } else if topic.starts_with(&remote_control_request_topic)
+                            || topic.starts_with(&macro_request_topic)
+                        {
+                            // TODO
+                            return MaintainResult::Continue;
+                        } else {
+                            log::error!("Unknown topic: {}", topic);
+                            return MaintainResult::Continue;
+                        }
                     }
-                } else if topic.starts_with(&remote_control_response_topic) {
-                    if let Ok(response) = remote_control::response::parse(&data) {
-                        Unsolicited::RemoteControl(response)
-                    } else {
-                        Unsolicited::BadFormat(BadFormat::RemoteControl(data.to_vec()))
-                    }
-                } else if topic.starts_with(&remote_control_request_topic)
-                    || topic.starts_with(&macro_topic)
-                {
-                    // TODO
-                    return MaintainResult::Continue;
-                } else {
-                    log::error!("Unknown topic: {}", topic);
-                    return MaintainResult::Continue;
+                    Err(_) => Unsolicited::BadFormat(BadFormat::Utf8 {
+                        topic,
+                        data: publish.payload.to_vec(),
+                    }),
                 }
             }
             rumqttc::Event::Incoming(rumqttc::Packet::ConnAck(_)) => Unsolicited::Connect,
@@ -254,7 +273,7 @@ impl Client {
 
     pub async fn remote_control(
         &mut self,
-        command: remote_control::request::Command,
+        command: remote_control::request::Request,
     ) -> Result<remote_control::response::Response, RequestError> {
         // Subscribe to response
         let mut rx = self.unsolicited().await;
@@ -287,6 +306,60 @@ impl Client {
         self.listeners.lock().await.push(tx);
         rx
     }
+
+    pub async fn real_time_wizzi_macro(
+        &mut self,
+        request: wizzi_macro::Request,
+    ) -> Result<mpsc::Receiver<wizzi_macro::Response>, RequestError> {
+        let (out_tx, out_rx) = mpsc::channel(1);
+
+        // Subscribe to response
+        let mut rx = self.unsolicited().await;
+
+        // Build request
+        let request_s = request.encode();
+        let data = request_s.as_bytes().to_vec();
+        let request_id = self.request_id();
+        let topic = format!("/applink/{}/macro/request/{request_id}", self.company);
+
+        // Send request
+        self.command_tx
+            .send(Command::Publish { topic, data })
+            .await
+            .map_err(RequestError::SendBackendDead)?;
+
+        // Wait for response
+        tokio::spawn(async move {
+            while let Some(unsolicited) = rx.recv().await {
+                if let Unsolicited::Macro(response) = unsolicited {
+                    if response.meta.rid == request_id {
+                        let done = matches!(
+                            response.msg,
+                            wizzi_macro::Message::Status {
+                                status: wizzi_macro::Status::End,
+                            }
+                        );
+                        if out_tx.send(response).await.is_err() || done {
+                            break;
+                        }
+                    }
+                }
+            }
+        });
+        Ok(out_rx)
+    }
+
+    pub async fn wizzi_macro(
+        &mut self,
+        request: wizzi_macro::Request,
+    ) -> Result<Vec<wizzi_macro::Response>, RequestError> {
+        let mut out = vec![];
+        let mut rx = self.real_time_wizzi_macro(request).await?;
+        while let Some(response) = rx.recv().await {
+            out.push(response);
+        }
+        Ok(out)
+    }
 }
 
 impl Clone for Client {
@@ -299,5 +372,106 @@ impl Clone for Client {
             id: self.id + 1,
             request_sn: 0,
         }
+    }
+}
+
+#[cfg(test)]
+pub mod test {
+    use super::*;
+    use crate::common::test::{load_config, TestConfig};
+    use std::sync::{Arc, Mutex, MutexGuard};
+
+    lazy_static! {
+        static ref RUNNING: Arc<Mutex<()>> = Arc::new(Mutex::new(()));
+    }
+
+    async fn client() -> (Client, TestConfig, MutexGuard<'static, ()>) {
+        let lock = RUNNING.lock().unwrap();
+
+        let conf = load_config().await;
+
+        let mut options =
+            rumqttc::MqttOptions::new(conf.client_id.clone(), conf.roger_server.clone(), 8883);
+        options.set_credentials(conf.username.clone(), conf.password.clone());
+        options.set_transport(rumqttc::Transport::tls_with_default_config());
+
+        let client = Client::new(options, conf.company.clone(), 1).await.unwrap();
+        (client, conf, lock)
+    }
+
+    #[tokio::test]
+    async fn test_read_uid() {
+        let (mut client, conf, lock) = client().await;
+
+        let request = remote_control::Request {
+            action: remote_control::Action::Read,
+            user_type: remote_control::Dash7boardPermission::Admin,
+            gmuid: remote_control::GatewayModemUid::Uid(conf.gateway.clone()),
+            uid: conf.device.clone(),
+            fid: 0,
+            field_name: "uid".to_string(),
+        };
+
+        let data = hex::decode(conf.device.clone()).unwrap();
+
+        let response = client.remote_control(request).await.unwrap();
+
+        assert_eq!(
+            response,
+            remote_control::Response {
+                meta: remote_control::Meta {
+                    uid: Some(conf.device.clone()),
+                    guid: Some(conf.gateway.clone()),
+                    gmuid: Some(conf.gateway.clone()),
+                    rid: response.meta.rid.clone(),
+                },
+                msg: Ok(remote_control::Message {
+                    value: Some(remote_control::Value::Binary(data)),
+                }),
+            }
+        );
+
+        drop(lock);
+    }
+
+    #[tokio::test]
+    async fn test_wizzi_macro() {
+        let (mut client, conf, lock) = client().await;
+        let command = wizzi_macro::Request {
+            site_id: conf.site_id,
+            user_type: wizzi_macro::Dash7boardPermission::Admin,
+            name: "wp_ping_no_security".to_string(),
+            shared_vars: std::collections::HashMap::new(),
+            device_uids: vec![conf.device.clone()],
+            gateway_mode: wizzi_macro::GatewayMode::Best,
+        };
+
+        let response = client.wizzi_macro(command).await.unwrap();
+        let rid = response[0].meta.rid.clone();
+
+        let expected_sequence = [
+            wizzi_macro::Message::Status {
+                status: wizzi_macro::Status::Start,
+            },
+            wizzi_macro::Message::Log { progress: 0.0 },
+            wizzi_macro::Message::DstatusOk {
+                uid: conf.device.clone(),
+            },
+            wizzi_macro::Message::Log { progress: 100.0 },
+            wizzi_macro::Message::Status {
+                status: wizzi_macro::Status::End,
+            },
+        ];
+        let expected = expected_sequence
+            .into_iter()
+            .map(|msg| wizzi_macro::Response {
+                meta: wizzi_macro::Meta { rid: rid.clone() },
+                msg,
+            })
+            .collect::<Vec<_>>();
+
+        assert_eq!(response, expected);
+
+        drop(lock);
     }
 }

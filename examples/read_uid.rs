@@ -1,4 +1,4 @@
-use applink::{codec::remote_control::request, mqtt::Client};
+use applink::{codec::remote_control, mqtt::Client};
 use clap::Parser;
 
 #[derive(Parser, Debug)]
@@ -25,16 +25,16 @@ async fn main() {
     options.set_transport(rumqttc::Transport::tls_with_default_config());
     let mut client = Client::new(options, params.company, 1).await.unwrap();
 
-    println!("Send command");
-    let command = request::Command {
-        action: request::Action::Read,
-        user_type: request::Dash7boardPermission::Admin,
-        gmuid: request::GatewayModemUid::Auto,
+    println!("Send request");
+    let request = remote_control::Request {
+        action: remote_control::Action::Read,
+        user_type: remote_control::Dash7boardPermission::Admin,
+        gmuid: remote_control::GatewayModemUid::Auto,
         uid: params.uid,
         fid: 0,
         field_name: "uid".to_string(),
     };
 
-    let response = client.remote_control(command).await.unwrap();
+    let response = client.remote_control(request).await.unwrap();
     println!("{:#?}", response);
 }

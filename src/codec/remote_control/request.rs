@@ -1,3 +1,4 @@
+pub use crate::common::Dash7boardPermission;
 use serde::{Deserialize, Serialize, Serializer};
 
 pub mod raw {
@@ -14,7 +15,7 @@ pub mod raw {
     }
 
     #[derive(Serialize, Deserialize, Debug)]
-    pub struct Command {
+    pub struct Request {
         pub action: Action,
         pub user_type: Dash7boardPermission,
         pub gmuid: GatewayModemUid,
@@ -41,13 +42,6 @@ pub enum Action {
     Write(Data),
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
-#[serde(rename_all = "lowercase")]
-pub enum Dash7boardPermission {
-    Operator,
-    Admin,
-}
-
 #[derive(Deserialize, Debug, Clone)]
 pub enum GatewayModemUid {
     Auto,
@@ -66,7 +60,7 @@ impl Serialize for GatewayModemUid {
 }
 
 #[derive(Debug, Clone)]
-pub struct Command {
+pub struct Request {
     pub action: Action,
     pub user_type: Dash7boardPermission,
     pub gmuid: GatewayModemUid,
@@ -75,8 +69,8 @@ pub struct Command {
     pub field_name: String,
 }
 
-impl From<Command> for raw::Command {
-    fn from(cmd: Command) -> Self {
+impl From<Request> for raw::Request {
+    fn from(cmd: Request) -> Self {
         let (data, value) = match &cmd.action {
             Action::Read => (None, None),
             Action::Write(Data::Integer(i)) => (None, Some(serde_json::Number::from(*i))),
@@ -101,9 +95,9 @@ impl From<Command> for raw::Command {
     }
 }
 
-impl Command {
+impl Request {
     pub fn encode(self) -> String {
-        let raw: raw::Command = self.into();
+        let raw: raw::Request = self.into();
         serde_json::to_string(&raw).unwrap()
     }
 }
