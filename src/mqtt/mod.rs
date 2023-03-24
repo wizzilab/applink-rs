@@ -1,4 +1,5 @@
 use crate::codec::{remote_control, report, wizzi_macro};
+use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::{mpsc, Mutex};
 use tokio_util::sync::PollSender;
@@ -346,7 +347,7 @@ impl Client {
         Ok(out_rx)
     }
 
-    pub async fn wizzi_macro(
+    pub async fn raw_wizzi_macro(
         &mut self,
         request: wizzi_macro::Request,
     ) -> Result<Vec<wizzi_macro::Response>, RequestError> {
@@ -356,6 +357,25 @@ impl Client {
             out.push(response);
         }
         Ok(out)
+    }
+
+    pub async fn wizzi_macro(
+        &mut self,
+        request: wizzi_macro::Request,
+    ) -> Result<HashMap<String, bool>, RequestError> {
+        let mut ret = HashMap::new();
+        for response in self.raw_wizzi_macro(request).await? {
+            match response.msg {
+                wizzi_macro::Message::DstatusOk { uid } => {
+                    ret.insert(uid, true);
+                }
+                wizzi_macro::Message::DstatusError { uid, err: _ } => {
+                    ret.insert(uid, false);
+                }
+                _ => {}
+            }
+        }
+        Ok(ret)
     }
 }
 
@@ -434,7 +454,7 @@ pub mod test {
     #[tokio::test]
     async fn test_wizzi_macro() {
         let (mut client, conf, lock) = client().await;
-        let command = wizzi_macro::Request {
+        let request = wizzi_macro::Request {
             site_id: conf.site_id,
             user_type: wizzi_macro::Dash7boardPermission::Admin,
             name: "wp_ping_no_security".to_string(),
@@ -443,7 +463,7 @@ pub mod test {
             gateway_mode: wizzi_macro::GatewayMode::Best,
         };
 
-        let response = client.wizzi_macro(command).await.unwrap();
+        let response = client.raw_wizzi_macro(request).await.unwrap();
         let rid = response[0].meta.rid.clone();
 
         let expected_sequence = [
