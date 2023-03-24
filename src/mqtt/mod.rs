@@ -11,9 +11,9 @@ pub enum Command {
 #[derive(Debug, Clone)]
 pub enum BadFormat {
     Utf8 { topic: String, data: Vec<u8> },
-    Report(String),
-    RemoteControl(String),
-    Macro(String),
+    Report(report::ReportParseError),
+    RemoteControl(remote_control::response::Error),
+    Macro(wizzi_macro::Error),
 }
 
 #[derive(Debug, Clone)]
@@ -127,22 +127,19 @@ impl ClientBackend {
                         let macro_response_topic =
                             format!("/applink/{}/macro/response/", self.company);
                         if topic.starts_with(&report_topic) {
-                            if let Ok(report) = report::parse(data) {
-                                Unsolicited::Report(report)
-                            } else {
-                                Unsolicited::BadFormat(BadFormat::Report(data.to_string()))
+                            match report::parse(data) {
+                                Ok(report) => Unsolicited::Report(report),
+                                Err(e) => Unsolicited::BadFormat(BadFormat::Report(e)),
                             }
                         } else if topic.starts_with(&remote_control_response_topic) {
-                            if let Ok(response) = remote_control::response::parse(data) {
-                                Unsolicited::RemoteControl(response)
-                            } else {
-                                Unsolicited::BadFormat(BadFormat::RemoteControl(data.to_string()))
+                            match remote_control::response::parse(data) {
+                                Ok(response) => Unsolicited::RemoteControl(response),
+                                Err(e) => Unsolicited::BadFormat(BadFormat::RemoteControl(e)),
                             }
                         } else if topic.starts_with(&macro_response_topic) {
-                            if let Ok(response) = wizzi_macro::Response::parse(data) {
-                                Unsolicited::Macro(response)
-                            } else {
-                                Unsolicited::BadFormat(BadFormat::Macro(data.to_string()))
+                            match wizzi_macro::Response::parse(data) {
+                                Ok(response) => Unsolicited::Macro(response),
+                                Err(e) => Unsolicited::BadFormat(BadFormat::Macro(e)),
                             }
                         } else if topic.starts_with(&remote_control_request_topic)
                             || topic.starts_with(&macro_request_topic)

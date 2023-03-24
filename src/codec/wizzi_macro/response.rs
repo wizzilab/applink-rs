@@ -1,3 +1,4 @@
+use crate::common::{parse_json, JsonParseError};
 use serde::{Deserialize, Serialize};
 use std::convert::TryFrom;
 
@@ -82,14 +83,15 @@ impl TryFrom<raw::Response> for Response {
     }
 }
 
+#[derive(Debug, Clone)]
 pub enum Error {
-    Json(serde_json::Error),
+    Json(JsonParseError),
     BadRaw(raw::Response),
 }
 
 impl Response {
     pub fn parse(data: &str) -> Result<Self, Error> {
-        let raw: raw::Response = serde_json::from_str(data).map_err(Error::Json)?;
+        let raw: raw::Response = parse_json(data).map_err(Error::Json)?;
         Self::try_from(raw).map_err(Error::BadRaw)
     }
 }

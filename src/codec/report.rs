@@ -1,4 +1,4 @@
-use crate::common::Uid;
+use crate::common::{parse_json, JsonParseError, Uid};
 use std::collections::HashMap;
 
 pub mod raw {
@@ -288,9 +288,9 @@ pub struct Report {
     pub msg: ReportMsg,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum ReportParseError {
-    Json(serde_json::Error),
+    Json(JsonParseError),
     Meta(MetaParseError),
     Msg(DataValueParseError),
     RawMsg(RawReportMsgParseError),
@@ -345,6 +345,6 @@ impl TryFrom<raw::RawReport> for RawReport {
 }
 
 pub fn parse(data: &str) -> Result<Report, ReportParseError> {
-    let raw_report: raw::Report = serde_json::from_str(data).map_err(ReportParseError::Json)?;
+    let raw_report: raw::Report = parse_json(data).map_err(ReportParseError::Json)?;
     raw_report.try_into()
 }

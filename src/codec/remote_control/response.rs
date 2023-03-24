@@ -1,3 +1,4 @@
+use crate::common::{parse_json, JsonParseError};
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Debug, Deserialize, Clone, PartialEq)]
@@ -115,14 +116,14 @@ impl TryFrom<raw::Response> for Response {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Error {
-    Json(serde_json::Error),
+    Json(JsonParseError),
     Hex(hex::FromHexError),
 }
 
-impl From<serde_json::Error> for Error {
-    fn from(err: serde_json::Error) -> Self {
+impl From<JsonParseError> for Error {
+    fn from(err: JsonParseError) -> Self {
         Error::Json(err)
     }
 }
@@ -134,7 +135,7 @@ impl From<hex::FromHexError> for Error {
 }
 
 pub fn parse(raw: &str) -> Result<Response, Error> {
-    let raw: raw::Response = serde_json::from_str(raw)?;
+    let raw: raw::Response = parse_json(raw)?;
     let response = raw.try_into()?;
     Ok(response)
 }

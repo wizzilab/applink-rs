@@ -1,4 +1,4 @@
-use serde::{Deserialize, Serialize};
+use serde::{de::DeserializeOwned, Deserialize, Serialize};
 
 #[derive(Clone, PartialEq, Eq)]
 pub enum Uid {
@@ -63,6 +63,38 @@ pub enum Dash7boardPermission {
     Operator,
     Admin,
     Root,
+}
+
+#[derive(Debug, Clone)]
+pub enum JsonParseError {
+    Json {
+        data: String,
+        error: String,
+    },
+    Format {
+        data: String,
+        object: serde_json::Value,
+        error: String,
+    },
+}
+pub fn parse_json<S: AsRef<str>, T: DeserializeOwned + Sized>(
+    data: S,
+) -> Result<T, JsonParseError> {
+    let data = data.as_ref();
+    match serde_json::from_str(data) {
+        Ok(v) => Ok(v),
+        Err(e) => match serde_json::from_str::<serde_json::Value>(data) {
+            Ok(v) => Err(JsonParseError::Format {
+                data: data.to_string(),
+                object: v,
+                error: e.to_string(),
+            }),
+            Err(e) => Err(JsonParseError::Json {
+                data: data.to_string(),
+                error: e.to_string(),
+            }),
+        },
+    }
 }
 
 #[cfg(test)]

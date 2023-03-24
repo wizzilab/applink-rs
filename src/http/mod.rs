@@ -1,4 +1,4 @@
-use crate::common::Uid;
+use crate::common::{parse_json, JsonParseError, Uid};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, PartialEq)]
@@ -41,7 +41,7 @@ pub enum RawDevicesInfos {
 #[derive(Debug)]
 pub enum Error {
     Reqwest(reqwest::Error),
-    Json(serde_json::Error),
+    Json(JsonParseError),
     Dash7board(String),
 }
 
@@ -51,8 +51,8 @@ impl From<reqwest::Error> for Error {
     }
 }
 
-impl From<serde_json::Error> for Error {
-    fn from(e: serde_json::Error) -> Self {
+impl From<JsonParseError> for Error {
+    fn from(e: JsonParseError) -> Self {
         Error::Json(e)
     }
 }
@@ -101,7 +101,7 @@ impl Credentials {
             .text()
             .await?;
 
-        let resp: RawSiteDevices = serde_json::from_str(&raw)?;
+        let resp: RawSiteDevices = parse_json(raw)?;
 
         match resp {
             RawSiteDevices::Ok { uids } => Ok(uids.into_iter().map(|s| s.into()).collect()),
@@ -120,7 +120,7 @@ impl Credentials {
             .text()
             .await?;
 
-        let resp: RawDevicesInfos = serde_json::from_str(&raw)?;
+        let resp: RawDevicesInfos = parse_json(raw)?;
 
         match resp {
             RawDevicesInfos::Ok { devices } => Ok(devices),
