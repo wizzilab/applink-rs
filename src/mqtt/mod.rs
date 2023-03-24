@@ -219,6 +219,10 @@ pub struct Client {
 
 #[derive(Debug)]
 pub enum RequestError {
+    Dash7boardError {
+        msg: String,
+        trace: Vec<wizzi_macro::Response>,
+    },
     SendBackendDead(mpsc::error::SendError<Command>),
     ReceiveBackendDead,
 }
@@ -336,6 +340,11 @@ impl Client {
                             wizzi_macro::Message::Status {
                                 status: wizzi_macro::Status::End,
                             }
+                        ) || matches!(
+                            response.msg,
+                            wizzi_macro::Message::Status {
+                                status: wizzi_macro::Status::Err { .. },
+                            }
                         );
                         if out_tx.send(response).await.is_err() || done {
                             break;
@@ -353,8 +362,21 @@ impl Client {
     ) -> Result<Vec<wizzi_macro::Response>, RequestError> {
         let mut out = vec![];
         let mut rx = self.real_time_wizzi_macro(request).await?;
+        let mut err = None;
         while let Some(response) = rx.recv().await {
+            if let wizzi_macro::Message::Status {
+                status: wizzi_macro::Status::Err { err: e },
+            } = &response.msg
+            {
+                err = Some(e.to_string());
+            }
             out.push(response);
+        }
+        if let Some(err) = err {
+            return Err(RequestError::Dash7boardError {
+                msg: err,
+                trace: out,
+            });
         }
         Ok(out)
     }

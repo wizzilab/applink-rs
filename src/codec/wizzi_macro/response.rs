@@ -7,16 +7,17 @@ pub struct Meta {
     pub rid: String,
 }
 
-#[derive(Debug, Serialize, Deserialize, PartialEq, Clone, Copy)]
-#[serde(rename_all = "UPPERCASE")]
-pub enum Status {
-    Start,
-    End,
-}
-
 pub mod raw {
     use super::*;
     use serde::{Deserialize, Serialize};
+
+    #[derive(Debug, Serialize, Deserialize, PartialEq, Clone, Copy)]
+    #[serde(rename_all = "UPPERCASE")]
+    pub enum Status {
+        Start,
+        End,
+        Err,
+    }
 
     #[derive(Debug, Serialize, Deserialize, PartialEq, Clone, Copy)]
     #[serde(rename_all = "UPPERCASE")]
@@ -31,6 +32,7 @@ pub mod raw {
     pub enum Message {
         Status {
             status: Status,
+            err: Option<String>,
         },
         Log {
             progress: f64,
@@ -46,6 +48,13 @@ pub mod raw {
         pub meta: Meta,
         pub msg: Message,
     }
+}
+
+#[derive(Debug, PartialEq, Clone)]
+pub enum Status {
+    Start,
+    End,
+    Err { err: String },
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -66,7 +75,15 @@ impl TryFrom<raw::Response> for Response {
     type Error = raw::Response;
     fn try_from(raw: raw::Response) -> Result<Self, Self::Error> {
         let msg = match raw.msg.clone() {
-            raw::Message::Status { status } => Message::Status { status },
+            raw::Message::Status { status, err } => Message::Status {
+                status: match status {
+                    raw::Status::Start => Status::Start,
+                    raw::Status::End => Status::End,
+                    raw::Status::Err => Status::Err {
+                        err: err.unwrap_or("Missing error message".to_string()),
+                    },
+                },
+            },
             raw::Message::Log { progress } => Message::Log { progress },
             raw::Message::Dstatus { uid, dstatus, err } => match dstatus {
                 raw::Dstatus::Ok => Message::DstatusOk { uid },
