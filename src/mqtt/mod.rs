@@ -362,15 +362,15 @@ impl Client {
     pub async fn wizzi_macro(
         &mut self,
         request: wizzi_macro::Request,
-    ) -> Result<HashMap<String, bool>, RequestError> {
+    ) -> Result<HashMap<String, Result<(), String>>, RequestError> {
         let mut ret = HashMap::new();
         for response in self.raw_wizzi_macro(request).await? {
             match response.msg {
                 wizzi_macro::Message::DstatusOk { uid } => {
-                    ret.insert(uid, true);
+                    ret.insert(uid, Ok(()));
                 }
-                wizzi_macro::Message::DstatusError { uid, err: _ } => {
-                    ret.insert(uid, false);
+                wizzi_macro::Message::DstatusError { uid, err } => {
+                    ret.insert(uid, Err(err));
                 }
                 _ => {}
             }
