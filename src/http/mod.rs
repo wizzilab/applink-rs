@@ -19,14 +19,18 @@ enum RawSiteDevices {
 
 #[derive(Debug, Clone, Deserialize, PartialEq)]
 pub struct DeviceInfos {
-    pub uid: String,
+    pub uid: Uid,
+    pub site_id: Option<usize>,
+    pub vid: Option<usize>,
+    pub key_ring_id: Option<usize>,
+    pub key: Option<usize>,
     pub label: Option<String>,
-    pub dc: String,
-    pub mc: String,
-    pub dfv: String,
-    pub dhv: String,
-    pub mfv: String,
-    pub mhv: String,
+    pub dc: Option<String>,
+    pub mc: Option<String>,
+    pub dfv: Option<String>,
+    pub dhv: Option<String>,
+    pub mfv: Option<String>,
+    pub mhv: Option<String>,
 }
 
 #[derive(Debug, Clone, Deserialize, PartialEq)]
