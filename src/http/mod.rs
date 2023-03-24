@@ -1,5 +1,5 @@
 use crate::common::Uid;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Credentials {
@@ -8,11 +8,32 @@ pub struct Credentials {
     pub password: String,
 }
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Deserialize, PartialEq)]
 #[serde(tag = "status")]
 enum RawSiteDevices {
     #[serde(rename = "ok")]
-    Ok { uids: Option<Vec<String>> },
+    Ok { uids: Vec<String> },
+    #[serde(rename = "error")]
+    Err { msg: String },
+}
+
+#[derive(Debug, Clone, Deserialize, PartialEq)]
+pub struct DeviceInfos {
+    pub uid: String,
+    pub label: Option<String>,
+    pub dc: String,
+    pub mc: String,
+    pub dfv: String,
+    pub dhv: String,
+    pub mfv: String,
+    pub mhv: String,
+}
+
+#[derive(Debug, Clone, Deserialize, PartialEq)]
+#[serde(tag = "status")]
+pub enum RawDevicesInfos {
+    #[serde(rename = "ok")]
+    Ok { devices: Vec<DeviceInfos> },
     #[serde(rename = "error")]
     Err { msg: String },
 }
@@ -58,8 +79,19 @@ impl Credentials {
             "https://{}:{}@{}/{}",
             self.username, self.password, self.server, path
         );
-        println!("{url}");
         reqwest::get(&url).await
+    }
+
+    pub async fn post<T: Serialize + Sized>(
+        &self,
+        path: &str,
+        data: T,
+    ) -> Result<reqwest::Response, reqwest::Error> {
+        let url = format!(
+            "https://{}:{}@{}/{}",
+            self.username, self.password, self.server, path
+        );
+        reqwest::Client::new().post(&url).json(&data).send().await
     }
 
     pub async fn get_site_devices(&self, id: usize) -> Result<Vec<Uid>, Error> {
@@ -72,10 +104,24 @@ impl Credentials {
         let resp: RawSiteDevices = serde_json::from_str(&raw)?;
 
         match resp {
-            RawSiteDevices::Ok { uids } => {
-                Ok(uids.unwrap().into_iter().map(|s| s.into()).collect())
-            }
+            RawSiteDevices::Ok { uids } => Ok(uids.into_iter().map(|s| s.into()).collect()),
             RawSiteDevices::Err { msg } => Err(Error::Dash7board(msg)),
+        }
+    }
+
+    pub async fn get_devices_infos(&self, uids: &[&str]) -> Result<Vec<DeviceInfos>, Error> {
+        let payload = serde_json::json!({ "uids": uids.iter().map(|uid| uid.to_string()).collect::<Vec<_>>() });
+        let raw = self
+            .post("api/v1/devices/info", payload)
+            .await?
+            .text()
+            .await?;
+
+        let resp: RawDevicesInfos = serde_json::from_str(&raw)?;
+
+        match resp {
+            RawDevicesInfos::Ok { devices } => Ok(devices),
+            RawDevicesInfos::Err { msg } => Err(Error::Dash7board(msg)),
         }
     }
 }
@@ -90,7 +136,7 @@ pub mod test {
         Credentials::new(
             conf.http_server.clone(),
             conf.username.clone(),
-            conf.password.clone(),
+            conf.password,
         )
     }
 
@@ -99,5 +145,12 @@ pub mod test {
         let creds = creds().await;
         let devices = creds.get_site_devices(1).await.unwrap();
         assert_eq!(devices, vec![Uid::from("001BC50C70010EDE".to_string())]);
+    }
+
+    #[tokio::test]
+    async fn get_devices_infos() {
+        let creds = creds().await;
+        let devices = creds.get_devices_infos(&[]).await.unwrap();
+        assert_eq!(devices, vec![]);
     }
 }
