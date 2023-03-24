@@ -109,8 +109,11 @@ impl Credentials {
         }
     }
 
-    pub async fn get_devices_infos(&self, uids: &[&str]) -> Result<Vec<DeviceInfos>, Error> {
-        let payload = serde_json::json!({ "uids": uids.iter().map(|uid| uid.to_string()).collect::<Vec<_>>() });
+    pub async fn get_devices_infos<S: AsRef<str>>(
+        &self,
+        uids: &[S],
+    ) -> Result<Vec<DeviceInfos>, Error> {
+        let payload = serde_json::json!({ "uids": uids.iter().map(|uid| uid.as_ref().to_string()).collect::<Vec<_>>() });
         let raw = self
             .post("api/v1/devices/info", payload)
             .await?
@@ -150,7 +153,8 @@ pub mod test {
     #[tokio::test]
     async fn get_devices_infos() {
         let creds = creds().await;
-        let devices = creds.get_devices_infos(&[]).await.unwrap();
+        let uids: Vec<String> = vec![];
+        let devices = creds.get_devices_infos(&uids).await.unwrap();
         assert_eq!(devices, vec![]);
     }
 }
