@@ -42,6 +42,15 @@ pub enum RawDevicesInfos {
     Err { msg: String },
 }
 
+#[derive(Debug, Clone, Deserialize, PartialEq)]
+#[serde(tag = "status")]
+pub enum RawDeviceTags {
+    #[serde(rename = "ok")]
+    Ok { tags: Vec<String> },
+    #[serde(rename = "error")]
+    Err { msg: String },
+}
+
 #[derive(Debug)]
 pub enum Error {
     Reqwest(reqwest::Error),
@@ -78,12 +87,20 @@ impl Credentials {
         }
     }
 
-    pub async fn get(&self, path: &str) -> Result<reqwest::Response, reqwest::Error> {
+    pub async fn get(
+        &self,
+        path: &str,
+        body: Option<serde_json::Value>,
+    ) -> Result<reqwest::Response, reqwest::Error> {
         let url = format!(
             "https://{}:{}@{}/{}",
             self.username, self.password, self.server, path
         );
-        reqwest::get(&url).await
+        let mut request = reqwest::Client::new().get(&url);
+        if let Some(body) = body {
+            request = request.json(&body);
+        }
+        request.send().await
     }
 
     pub async fn post<T: Serialize + Sized>(
@@ -100,7 +117,7 @@ impl Credentials {
 
     pub async fn get_site_devices(&self, id: usize) -> Result<Vec<Uid>, Error> {
         let raw = self
-            .get(&format!("api/v1/sites/{id}/devices"))
+            .get(&format!("api/v1/sites/{id}/devices"), None)
             .await?
             .text()
             .await?;
@@ -129,6 +146,22 @@ impl Credentials {
         match resp {
             RawDevicesInfos::Ok { devices } => Ok(devices),
             RawDevicesInfos::Err { msg } => Err(Error::Dash7board(msg)),
+        }
+    }
+
+    pub async fn get_device_tags<S: AsRef<str>>(&self, uid: &S) -> Result<Vec<String>, Error> {
+        let data = serde_json::json!({"tags": []});
+        let raw = self
+            .post(&format!("api/v1/devices/{}/tags/add", uid.as_ref()), data)
+            .await?
+            .text()
+            .await?;
+
+        let resp: RawDeviceTags = parse_json(raw)?;
+
+        match resp {
+            RawDeviceTags::Ok { tags } => Ok(tags),
+            RawDeviceTags::Err { msg } => Err(Error::Dash7board(msg)),
         }
     }
 }
@@ -160,5 +193,15 @@ pub mod test {
         let uids: Vec<String> = vec![];
         let devices = creds.get_devices_infos(&uids).await.unwrap();
         assert_eq!(devices, vec![]);
+    }
+
+    #[tokio::test]
+    async fn get_device_tags() {
+        let creds = creds().await;
+        let tags = creds
+            .get_device_tags(&"001BC50C70010EDE".to_string())
+            .await
+            .unwrap();
+        assert_eq!(tags, vec!["test".to_string()]);
     }
 }
