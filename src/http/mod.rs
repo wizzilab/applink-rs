@@ -79,6 +79,18 @@ impl Credentials {
         }
     }
 
+    pub fn try_default() -> Result<Self, std::env::VarError> {
+        let server = std::env::var("DASH7BOARD_SERVER")?;
+        let username = std::env::var("APPLINK_ID")?;
+        let password = std::env::var("APPLINK_KEY")?;
+
+        Ok(Self {
+            server,
+            username,
+            password,
+        })
+    }
+
     pub fn dash7board(username: String, password: String) -> Self {
         Self {
             server: "dash7board.wizzilab.com".to_string(),
