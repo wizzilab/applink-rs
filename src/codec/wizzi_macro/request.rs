@@ -1,4 +1,4 @@
-pub use crate::common::Dash7boardPermission;
+pub use crate::common::{Dash7boardPermission, Uid};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
@@ -15,6 +15,7 @@ pub struct Request {
     pub name: String,
     // TODO What are the different value types supported?
     pub shared_vars: HashMap<String, usize>,
+    pub device_vars: HashMap<Uid, HashMap<String, usize>>,
     pub device_uids: Vec<String>,
     pub gateway_mode: GatewayMode,
 }

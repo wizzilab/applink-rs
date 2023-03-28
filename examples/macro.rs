@@ -36,6 +36,7 @@ async fn main() {
         user_type: applink::common::Dash7boardPermission::Admin,
         name: params.macro_name,
         shared_vars: HashMap::new(),
+        device_vars: HashMap::new(),
         device_uids: vec![params.uid],
         gateway_mode: wizzi_macro::GatewayMode::Best,
     };
