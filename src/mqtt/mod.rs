@@ -481,6 +481,7 @@ pub mod test {
             user_type: wizzi_macro::Dash7boardPermission::Admin,
             name: "wp_ping_no_security".to_string(),
             shared_vars: std::collections::HashMap::new(),
+            device_vars: std::collections::HashMap::new(),
             device_uids: vec![conf.device.clone()],
             gateway_mode: wizzi_macro::GatewayMode::Best,
         };
