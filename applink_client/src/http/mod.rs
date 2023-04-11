@@ -1,5 +1,6 @@
-use crate::common::{parse_json, JsonParseError, Uid};
+use crate::codec::uid::Uid;
 use serde::{Deserialize, Serialize};
+use wizzi_common::json;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Credentials {
@@ -54,7 +55,7 @@ pub enum RawDeviceTags {
 #[derive(Debug)]
 pub enum Error {
     Reqwest(reqwest::Error),
-    Json(JsonParseError),
+    Json(json::Error),
     Dash7board(String),
 }
 
@@ -64,8 +65,8 @@ impl From<reqwest::Error> for Error {
     }
 }
 
-impl From<JsonParseError> for Error {
-    fn from(e: JsonParseError) -> Self {
+impl From<json::Error> for Error {
+    fn from(e: json::Error) -> Self {
         Error::Json(e)
     }
 }
@@ -134,7 +135,7 @@ impl Credentials {
             .text()
             .await?;
 
-        let resp: RawSiteDevices = parse_json(raw)?;
+        let resp: RawSiteDevices = json::from_str(raw)?;
 
         match resp {
             RawSiteDevices::Ok { uids } => Ok(uids.into_iter().map(|s| s.into()).collect()),
@@ -153,7 +154,7 @@ impl Credentials {
             .text()
             .await?;
 
-        let resp: RawDevicesInfos = parse_json(raw)?;
+        let resp: RawDevicesInfos = json::from_str(raw)?;
 
         match resp {
             RawDevicesInfos::Ok { devices } => Ok(devices),
@@ -169,7 +170,7 @@ impl Credentials {
             .text()
             .await?;
 
-        let resp: RawDeviceTags = parse_json(raw)?;
+        let resp: RawDeviceTags = json::from_str(raw)?;
 
         match resp {
             RawDeviceTags::Ok { tags } => Ok(tags),

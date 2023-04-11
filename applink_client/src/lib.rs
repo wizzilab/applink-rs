@@ -1,4 +1,5 @@
-pub mod codec;
+pub use applink_codec as codec;
+
 pub mod common;
 pub mod http;
 pub mod mqtt;

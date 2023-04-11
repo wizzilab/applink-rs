@@ -1,6 +1,6 @@
-use crate::common::{parse_json, JsonParseError};
 use serde::{Deserialize, Serialize};
 use std::convert::TryFrom;
+use wizzi_common::json;
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
 pub struct Meta {
@@ -102,13 +102,13 @@ impl TryFrom<raw::Response> for Response {
 
 #[derive(Debug, Clone)]
 pub enum Error {
-    Json(JsonParseError),
+    Json(json::Error),
     BadRaw(raw::Response),
 }
 
 impl Response {
     pub fn parse(data: &str) -> Result<Self, Error> {
-        let raw: raw::Response = parse_json(data).map_err(Error::Json)?;
+        let raw: raw::Response = json::from_str(data).map_err(Error::Json)?;
         Self::try_from(raw).map_err(Error::BadRaw)
     }
 }

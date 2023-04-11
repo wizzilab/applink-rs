@@ -1,4 +1,4 @@
-use applink::mqtt::Client;
+use applink_client::mqtt::Client;
 use clap::Parser;
 
 #[derive(Parser, Debug)]

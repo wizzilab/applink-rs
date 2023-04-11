@@ -1,6 +1,5 @@
-use applink::{codec::wizzi_macro, mqtt::Client};
+use applink_client::{codec::remote_control, mqtt::Client};
 use clap::Parser;
-use std::collections::HashMap;
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
@@ -13,10 +12,6 @@ pub struct Params {
     pub password: String,
     #[arg(long)]
     pub uid: String,
-    #[arg(long)]
-    pub site_id: usize,
-    #[arg(long)]
-    pub macro_name: String,
 }
 
 #[tokio::main]
@@ -31,16 +26,15 @@ async fn main() {
     let mut client = Client::new(options, params.company, 1).await.unwrap();
 
     println!("Send request");
-    let request = wizzi_macro::Request {
-        site_id: params.site_id,
-        user_type: applink::common::Dash7boardPermission::Admin,
-        name: params.macro_name,
-        shared_vars: HashMap::new(),
-        device_vars: HashMap::new(),
-        device_uids: vec![params.uid],
-        gateway_mode: wizzi_macro::GatewayMode::Best,
+    let request = remote_control::Request {
+        action: remote_control::Action::Read,
+        user_type: remote_control::Dash7boardPermission::Admin,
+        gmuid: remote_control::GatewayModemUid::Auto,
+        uid: params.uid,
+        fid: 0,
+        field_name: "uid".to_string(),
     };
 
-    let response = client.wizzi_macro(request).await.unwrap();
+    let response = client.remote_control(request).await.unwrap();
     println!("{:#?}", response);
 }

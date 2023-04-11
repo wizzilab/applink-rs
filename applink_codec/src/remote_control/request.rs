@@ -1,4 +1,4 @@
-pub use crate::common::Dash7boardPermission;
+pub use crate::permission::Dash7boardPermission;
 use serde::{Deserialize, Serialize, Serializer};
 
 pub mod raw {

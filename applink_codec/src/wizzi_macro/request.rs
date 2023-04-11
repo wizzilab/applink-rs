@@ -1,4 +1,4 @@
-pub use crate::common::{Dash7boardPermission, Uid};
+pub use crate::{permission::Dash7boardPermission, uid::Uid};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 

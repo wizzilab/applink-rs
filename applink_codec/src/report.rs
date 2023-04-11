@@ -1,5 +1,6 @@
-use crate::common::{parse_json, JsonParseError, Uid};
+use crate::uid::Uid;
 use std::collections::HashMap;
+use wizzi_common::json;
 
 pub mod raw {
     use serde::{Deserialize, Serialize};
@@ -290,7 +291,7 @@ pub struct Report {
 
 #[derive(Debug, Clone)]
 pub enum ReportParseError {
-    Json(JsonParseError),
+    Json(json::Error),
     Meta(MetaParseError),
     Msg(DataValueParseError),
     RawMsg(RawReportMsgParseError),
@@ -345,6 +346,6 @@ impl TryFrom<raw::RawReport> for RawReport {
 }
 
 pub fn parse(data: &str) -> Result<Report, ReportParseError> {
-    let raw_report: raw::Report = parse_json(data).map_err(ReportParseError::Json)?;
+    let raw_report: raw::Report = json::from_str(data).map_err(ReportParseError::Json)?;
     raw_report.try_into()
 }

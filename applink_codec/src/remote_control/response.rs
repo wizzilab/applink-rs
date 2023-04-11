@@ -1,5 +1,5 @@
-use crate::common::{parse_json, JsonParseError};
 use serde::{Deserialize, Serialize};
+use wizzi_common::json;
 
 #[derive(Serialize, Debug, Deserialize, Clone, PartialEq)]
 pub struct Meta {
@@ -118,12 +118,12 @@ impl TryFrom<raw::Response> for Response {
 
 #[derive(Debug, Clone)]
 pub enum Error {
-    Json(JsonParseError),
+    Json(json::Error),
     Hex(hex::FromHexError),
 }
 
-impl From<JsonParseError> for Error {
-    fn from(err: JsonParseError) -> Self {
+impl From<json::Error> for Error {
+    fn from(err: json::Error) -> Self {
         Error::Json(err)
     }
 }
@@ -135,7 +135,7 @@ impl From<hex::FromHexError> for Error {
 }
 
 pub fn parse(raw: &str) -> Result<Response, Error> {
-    let raw: raw::Response = parse_json(raw)?;
+    let raw: raw::Response = json::from_str(raw)?;
     let response = raw.try_into()?;
     Ok(response)
 }
