@@ -60,7 +60,7 @@ dependencies = [
  "tokio",
  "tokio-stream",
  "tokio-util",
- "wizzi_common",
+ "wizzi-common",
 ]
 
 [[package]]
@@ -70,7 +70,7 @@ dependencies = [
  "hex",
  "serde",
  "serde_json",
- "wizzi_common",
+ "wizzi-common",
 ]
 
 [[package]]
@@ -1431,9 +1431,9 @@ dependencies = [
 
 [[package]]
 name = "serde_json"
-version = "1.0.95"
+version = "1.0.96"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d721eca97ac802aa7777b701877c8004d950fc142651367300d21c1cc0194744"
+checksum = "057d394a50403bcac12672b2b18fb387ab6d289d957dab67dd201875391e52f1"
 dependencies = [
  "itoa",
  "ryu",
@@ -2177,9 +2177,9 @@ dependencies = [
 ]
 
 [[package]]
-name = "wizzi_common"
+name = "wizzi-common"
 version = "0.1.0"
-source = "git+ssh://github.com/wizzilab/wizzi_common-rs.git?branch=master#0af80fc0b112d6088a4220de6d21d5266d8ffe39"
+source = "git+ssh://github.com/wizzilab/wizzi-common-rs.git?branch=master#519fed880ce6319dceb3204e382adb35f5b9068c"
 dependencies = [
  "serde",
  "serde_json",
