@@ -1,28 +1,28 @@
 use applink_client::{codec::wizzi_macro, mqtt::Client};
 use clap::Parser;
-use std::collections::HashMap;
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
 pub struct Params {
-    #[arg(long)]
+    #[arg(short, long)]
     pub company: String,
-    #[arg(long)]
+    #[arg(short, long)]
     pub username: String,
-    #[arg(long)]
+    #[arg(short, long)]
     pub password: String,
-    #[arg(long)]
-    pub uid: String,
-    #[arg(long)]
-    pub site_id: usize,
-    #[arg(long)]
-    pub macro_name: String,
+    /// Example files are found in applink_client/examples/macro/
+    #[arg(short, long)]
+    pub macro_file: String,
 }
 
 #[tokio::main]
 async fn main() {
     let params = Params::parse();
     let client_id = format!("{}:0", params.username);
+
+    println!("Read config");
+    let config_json = std::fs::read_to_string(params.macro_file).unwrap();
+    let request: wizzi_macro::Request = serde_json::from_str(&config_json).unwrap();
 
     println!("Start mqtt client");
     let mut options = rumqttc::MqttOptions::new(client_id, "roger.wizzilab.com", 8883);
@@ -31,16 +31,6 @@ async fn main() {
     let mut client = Client::new(options, params.company, 1).await.unwrap();
 
     println!("Send request");
-    let request = wizzi_macro::Request {
-        site_id: params.site_id,
-        user_type: applink_client::codec::permission::Dash7boardPermission::Admin,
-        name: params.macro_name,
-        shared_vars: HashMap::new(),
-        device_vars: HashMap::new(),
-        device_uids: vec![params.uid],
-        gateway_mode: wizzi_macro::GatewayMode::Best,
-    };
-
     let response = client.wizzi_macro(request).await.unwrap();
     println!("{:#?}", response);
 }

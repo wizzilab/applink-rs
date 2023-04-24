@@ -1,0 +1,22 @@
+{
+    "site_id": 905,
+    "user_type": "admin",
+    "name": "uguard_peripheral_configure",
+    "shared_vars": {
+        "PERIPHERAL_NB": 4,
+        "CONTROLLER_VID": 84
+    },
+    "device_vars": {
+        "001BC50C7002D08E": { "UWB_SLOT": 0 },
+        "001BC50C7002D08F": { "UWB_SLOT": 1 },
+        "001BC50C7002D090": { "UWB_SLOT": 2 },
+        "001BC50C7002D091": { "UWB_SLOT": 3 }
+    },
+    "device_uids": [
+        "001BC50C7002D08E",
+        "001BC50C7002D08F",
+        "001BC50C7002D090",
+        "001BC50C7002D091"
+    ],
+    "gateway_mode": "best"
+}
