@@ -4,6 +4,13 @@ use std::sync::Arc;
 use tokio::sync::{mpsc, Mutex};
 use tokio_util::sync::PollSender;
 
+macro_rules! p_debug {
+    ($($arg:tt)*) => {
+        #[cfg(feature = "debug")]
+        log::debug!( $($arg)*)
+    };
+}
+
 #[derive(Debug)]
 pub enum Command {
     Publish { topic: String, data: Vec<u8> },
@@ -99,6 +106,7 @@ impl ClientBackend {
             .try_publish(&topic, rumqttc::QoS::AtLeastOnce, false, data.clone())
             .is_ok()
         {
+            p_debug!("Sent to MQTT: {} {:?}", topic, data);
             MaintainResult::Continue
         } else {
             self.pending_request = Some((topic, data));
@@ -115,9 +123,11 @@ impl ClientBackend {
 
         let to_send = match packet {
             rumqttc::Event::Incoming(rumqttc::Packet::Publish(publish)) => {
+                p_debug!("Rcv from MQTT: {} {:?}", topic, publish.payload);
                 let topic = publish.topic;
                 match std::str::from_utf8(&publish.payload) {
                     Ok(data) => {
+                        // TODO Make a topic tree instead
                         let report_topic = format!("/applink/{}/report", self.company);
                         let remote_control_response_topic =
                             format!("/applink/{}/remotectrl/response/", self.company);
@@ -158,8 +168,14 @@ impl ClientBackend {
                     }),
                 }
             }
-            rumqttc::Event::Incoming(rumqttc::Packet::ConnAck(_)) => Unsolicited::Connect,
-            rumqttc::Event::Incoming(rumqttc::Packet::Disconnect) => Unsolicited::Disconnect,
+            rumqttc::Event::Incoming(rumqttc::Packet::ConnAck(_)) => {
+                p_debug!("Connected");
+                Unsolicited::Connect
+            }
+            rumqttc::Event::Incoming(rumqttc::Packet::Disconnect) => {
+                p_debug!("Disconnected");
+                Unsolicited::Disconnect
+            }
             _ => return MaintainResult::Continue,
         };
 
@@ -425,6 +441,7 @@ pub mod test {
     }
 
     async fn client() -> (Client, TestConfig, MutexGuard<'static, ()>) {
+        #![allow(clippy::await_holding_lock)]
         let lock = RUNNING.lock().unwrap();
 
         let conf = load_config().await;
@@ -440,6 +457,7 @@ pub mod test {
 
     #[tokio::test]
     async fn test_read_uid() {
+        #![allow(clippy::await_holding_lock)]
         let (mut client, conf, lock) = client().await;
 
         let request = remote_control::Request {
@@ -475,6 +493,7 @@ pub mod test {
 
     #[tokio::test]
     async fn test_wizzi_macro() {
+        #![allow(clippy::await_holding_lock)]
         let (mut client, conf, lock) = client().await;
         let request = wizzi_macro::Request {
             site_id: conf.site_id,

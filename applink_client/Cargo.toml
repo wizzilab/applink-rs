@@ -27,3 +27,6 @@ name = "read_uid"
 [dev_dependencies]
 clap = { version = "4", features = ["derive"] }
 
+[features]
+default = []
+debug = []
