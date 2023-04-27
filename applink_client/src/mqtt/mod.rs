@@ -29,6 +29,8 @@ pub enum Unsolicited {
     Connect,
     Disconnect,
     Report(report::Report),
+    // TODO Rewrite to have a proper request/response handling instead of hijacking the unsolicited
+    // feed.
     RemoteControl(remote_control::response::Response),
     Macro(wizzi_macro::response::Response),
     BadFormat(BadFormat),
