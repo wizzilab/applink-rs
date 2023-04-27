@@ -125,8 +125,8 @@ impl ClientBackend {
 
         let to_send = match packet {
             rumqttc::Event::Incoming(rumqttc::Packet::Publish(publish)) => {
-                p_debug!("Rcv from MQTT: {} {:?}", topic, publish.payload);
                 let topic = publish.topic;
+                p_debug!("Rcv from MQTT: {} {:?}", topic, publish.payload);
                 match std::str::from_utf8(&publish.payload) {
                     Ok(data) => {
                         // TODO Make a topic tree instead
