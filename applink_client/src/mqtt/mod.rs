@@ -243,6 +243,7 @@ pub enum RequestError {
     },
     SendBackendDead(mpsc::error::SendError<Command>),
     ReceiveBackendDead,
+    Disconnected,
 }
 
 impl Client {
@@ -312,10 +313,16 @@ impl Client {
 
         // Wait for response
         while let Some(unsolicited) = rx.recv().await {
-            if let Unsolicited::RemoteControl(response) = unsolicited {
-                if response.meta.rid == request_id {
-                    return Ok(response);
+            match unsolicited {
+                Unsolicited::RemoteControl(response) => {
+                    if response.meta.rid == request_id {
+                        return Ok(response);
+                    }
                 }
+                Unsolicited::Disconnect => {
+                    return Err(RequestError::Disconnected);
+                }
+                _ => {}
             }
         }
         Err(RequestError::ReceiveBackendDead)
@@ -351,23 +358,40 @@ impl Client {
         // Wait for response
         tokio::spawn(async move {
             while let Some(unsolicited) = rx.recv().await {
-                if let Unsolicited::Macro(response) = unsolicited {
-                    if response.meta.rid == request_id {
-                        let done = matches!(
-                            response.msg,
-                            wizzi_macro::Message::Status {
-                                status: wizzi_macro::Status::End,
+                match unsolicited {
+                    Unsolicited::Macro(response) => {
+                        if response.meta.rid == request_id {
+                            let done = matches!(
+                                response.msg,
+                                wizzi_macro::Message::Status {
+                                    status: wizzi_macro::Status::End,
+                                }
+                            ) || matches!(
+                                response.msg,
+                                wizzi_macro::Message::Status {
+                                    status: wizzi_macro::Status::Err { .. },
+                                }
+                            );
+                            if out_tx.send(response).await.is_err() || done {
+                                break;
                             }
-                        ) || matches!(
-                            response.msg,
-                            wizzi_macro::Message::Status {
-                                status: wizzi_macro::Status::Err { .. },
-                            }
-                        );
-                        if out_tx.send(response).await.is_err() || done {
-                            break;
                         }
                     }
+                    Unsolicited::Disconnect => {
+                        let _ = out_tx
+                            .send(wizzi_macro::Response {
+                                meta: wizzi_macro::Meta { rid: request_id },
+                                msg: wizzi_macro::Message::Status {
+                                    status: wizzi_macro::Status::Err {
+                                        err: "Lost MQTT connection".to_string(),
+                                    },
+                                },
+                            })
+                            .await
+                            .is_err();
+                        break;
+                    }
+                    _ => {}
                 }
             }
         });
