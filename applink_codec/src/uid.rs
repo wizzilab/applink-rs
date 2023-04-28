@@ -13,7 +13,7 @@ pub enum UidDash7DecodeError {
 }
 
 impl Uid {
-    pub const VGW_PREFIX: &'static str = "VGW-";
+    pub const VGW_PREFIX: &'static str = "VGW";
 
     pub fn parse_dash7(s: &str) -> Result<wizzi_common::dash7::Uid, UidDash7DecodeError> {
         let data: [u8; 8] = hex::decode(s)
@@ -29,10 +29,15 @@ impl From<String> for Uid {
     fn from(uid: String) -> Self {
         if let Ok(uid) = Self::parse_dash7(&uid) {
             Self::Dash7(uid)
-        } else if uid.starts_with(Self::VGW_PREFIX) {
-            Self::Vgw(uid[Self::VGW_PREFIX.len()..].to_string())
         } else {
-            Self::Unknown(uid)
+            let mut parts: Vec<_> = uid.split('-').collect();
+            match parts.first() {
+                Some(&Self::VGW_PREFIX) => {
+                    parts.remove(0);
+                    Self::Vgw(parts.join("-"))
+                }
+                _ => Self::Unknown(uid),
+            }
         }
     }
 }

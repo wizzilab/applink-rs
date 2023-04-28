@@ -291,7 +291,7 @@ pub struct Report {
 
 #[derive(Debug, Clone)]
 pub enum ReportParseError {
-    Json(json::Error),
+    Json(json::DecodingError),
     Meta(MetaParseError),
     Msg(DataValueParseError),
     RawMsg(RawReportMsgParseError),

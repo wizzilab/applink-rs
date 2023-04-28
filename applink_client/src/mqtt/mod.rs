@@ -3,6 +3,7 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::{mpsc, Mutex};
 use tokio_util::sync::PollSender;
+use wizzi_common::json;
 
 macro_rules! p_debug {
     ($($arg:tt)*) => {
@@ -70,7 +71,11 @@ impl ClientBackend {
         tokio::spawn(async move {
             loop {
                 match connection.poll().await {
-                    Ok(event) => mqtt_unsolicited_tx.send(event).await.unwrap(),
+                    Ok(event) => {
+                        if mqtt_unsolicited_tx.send(event).await.is_err() {
+                            break;
+                        }
+                    }
                     Err(e) => {
                         log::error!("MQTT connection error: {}", e);
                         break;
@@ -183,7 +188,7 @@ impl ClientBackend {
 
         match self.unsolicited_tx.poll_reserve(cx) {
             std::task::Poll::Ready(Ok(_)) => {
-                self.unsolicited_tx.send_item(to_send).unwrap();
+                let _ = self.unsolicited_tx.send_item(to_send);
             }
             std::task::Poll::Ready(Err(_)) => return MaintainResult::Closed,
             std::task::Poll::Pending => {
@@ -237,6 +242,8 @@ pub struct Client {
 
 #[derive(Debug)]
 pub enum RequestError {
+    BadRemoteControl(remote_control::request::BadRequest),
+    BadMacro(json::EncodingError<wizzi_macro::Request>),
     Dash7boardError {
         msg: String,
         trace: Vec<wizzi_macro::Response>,
@@ -300,7 +307,7 @@ impl Client {
         let mut rx = self.unsolicited().await;
 
         // Build request
-        let command_s = command.encode();
+        let command_s = command.encode().map_err(RequestError::BadRemoteControl)?;
         let data = command_s.as_bytes().to_vec();
         let request_id = self.request_id();
         let topic = format!("/applink/{}/remotectrl/request/{request_id}", self.company);
@@ -344,7 +351,7 @@ impl Client {
         let mut rx = self.unsolicited().await;
 
         // Build request
-        let request_s = request.encode();
+        let request_s = request.encode().map_err(RequestError::BadMacro)?;
         let data = request_s.as_bytes().to_vec();
         let request_id = self.request_id();
         let topic = format!("/applink/{}/macro/request/{request_id}", self.company);
@@ -458,6 +465,9 @@ impl Clone for Client {
 
 #[cfg(test)]
 pub mod test {
+    #![allow(clippy::unwrap_used)]
+    #![allow(clippy::indexing_slicing)]
+
     use super::*;
     use crate::common::test::{load_config, TestConfig};
     use std::sync::{Arc, Mutex, MutexGuard};

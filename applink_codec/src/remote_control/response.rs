@@ -46,6 +46,7 @@ pub mod raw {
 
     #[test]
     fn write_response() {
+        #![allow(clippy::unwrap_used)]
         let response = "{\"meta\":{\"uid\":\"001BC50C71006FD7\",\"guid\":\"001BC50C71004102\",\"gmuid\":\"001BC50C71004102\",\"rid\":\"0-1\"},\"msg\":{\"status\":\"OK\"}}";
         let raw: Response = serde_json::from_str(response).unwrap();
         assert_eq!(
@@ -109,7 +110,7 @@ impl TryFrom<raw::Response> for Response {
     fn try_from(raw: raw::Response) -> Result<Self, Self::Error> {
         let raw::Response { meta, msg } = raw;
         let msg = match msg {
-            raw::RawMessage::Ok(msg) => Ok(msg.try_into().unwrap()),
+            raw::RawMessage::Ok(msg) => Ok(msg.try_into()?),
             raw::RawMessage::Err { err_msg } => Err(err_msg),
         };
         Ok(Self { meta, msg })
@@ -118,12 +119,12 @@ impl TryFrom<raw::Response> for Response {
 
 #[derive(Debug, Clone)]
 pub enum Error {
-    Json(json::Error),
+    Json(json::DecodingError),
     Hex(hex::FromHexError),
 }
 
-impl From<json::Error> for Error {
-    fn from(err: json::Error) -> Self {
+impl From<json::DecodingError> for Error {
+    fn from(err: json::DecodingError) -> Self {
         Error::Json(err)
     }
 }

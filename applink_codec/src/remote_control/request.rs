@@ -1,11 +1,13 @@
 pub use crate::permission::Dash7boardPermission;
 use serde::{Deserialize, Serialize, Serializer};
+use std::convert::{TryFrom, TryInto};
+use wizzi_common::json;
 
 pub mod raw {
     use super::{Dash7boardPermission, GatewayModemUid};
     use serde::{Deserialize, Serialize};
 
-    #[derive(Serialize, Deserialize, Debug)]
+    #[derive(Serialize, Deserialize, Debug, Clone)]
     #[serde(rename_all = "lowercase")]
     pub enum Action {
         #[serde(rename(serialize = "R"))]
@@ -14,7 +16,7 @@ pub mod raw {
         Write,
     }
 
-    #[derive(Serialize, Deserialize, Debug)]
+    #[derive(Serialize, Deserialize, Debug, Clone)]
     pub struct Request {
         pub action: Action,
         pub user_type: Dash7boardPermission,
@@ -69,17 +71,18 @@ pub struct Request {
     pub field_name: String,
 }
 
-impl From<Request> for raw::Request {
-    fn from(cmd: Request) -> Self {
+impl TryFrom<Request> for raw::Request {
+    type Error = f64;
+    fn try_from(cmd: Request) -> Result<Self, Self::Error> {
         let (data, value) = match &cmd.action {
             Action::Read => (None, None),
             Action::Write(Data::Integer(i)) => (None, Some(serde_json::Number::from(*i))),
             Action::Write(Data::Float(f)) => {
-                (None, Some(serde_json::Number::from_f64(*f).unwrap()))
+                (None, Some(serde_json::Number::from_f64(*f).ok_or(*f)?))
             }
             Action::Write(Data::Raw(r)) => (Some(r.clone()), None),
         };
-        Self {
+        Ok(Self {
             action: match cmd.action {
                 Action::Read => raw::Action::Read,
                 Action::Write(_) => raw::Action::Write,
@@ -91,13 +94,19 @@ impl From<Request> for raw::Request {
             field_name: cmd.field_name,
             data,
             value,
-        }
+        })
     }
 }
 
+#[derive(Clone, Debug)]
+pub enum BadRequest {
+    BadValue(f64),
+    BadJson(json::EncodingError<raw::Request>),
+}
+
 impl Request {
-    pub fn encode(self) -> String {
-        let raw: raw::Request = self.into();
-        serde_json::to_string(&raw).unwrap()
+    pub fn encode(self) -> Result<String, BadRequest> {
+        let raw: raw::Request = self.try_into().map_err(BadRequest::BadValue)?;
+        json::to_string(&raw).map_err(BadRequest::BadJson)
     }
 }

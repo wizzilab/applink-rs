@@ -102,7 +102,7 @@ impl TryFrom<raw::Response> for Response {
 
 #[derive(Debug, Clone)]
 pub enum Error {
-    Json(json::Error),
+    Json(json::DecodingError),
     BadRaw(raw::Response),
 }
 

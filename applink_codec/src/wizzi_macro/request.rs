@@ -1,6 +1,7 @@
 pub use crate::{permission::Dash7boardPermission, uid::Uid};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use wizzi_common::json;
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone, Copy)]
 #[serde(rename_all = "lowercase")]
@@ -21,7 +22,7 @@ pub struct Request {
 }
 
 impl Request {
-    pub fn encode(&self) -> String {
-        serde_json::to_string(self).unwrap()
+    pub fn encode(&self) -> Result<String, json::EncodingError<Self>> {
+        json::to_string(self)
     }
 }

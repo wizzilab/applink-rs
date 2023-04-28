@@ -55,7 +55,7 @@ pub enum RawDeviceTags {
 #[derive(Debug)]
 pub enum Error {
     Reqwest(reqwest::Error),
-    Json(json::Error),
+    Json(json::DecodingError),
     Dash7board(String),
 }
 
@@ -65,8 +65,8 @@ impl From<reqwest::Error> for Error {
     }
 }
 
-impl From<json::Error> for Error {
-    fn from(e: json::Error) -> Self {
+impl From<json::DecodingError> for Error {
+    fn from(e: json::DecodingError) -> Self {
         Error::Json(e)
     }
 }
