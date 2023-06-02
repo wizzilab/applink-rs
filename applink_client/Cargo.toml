@@ -19,7 +19,7 @@ rand = "0.8"
 reqwest = { version = "0.11.14", features = ["json"] }
 lazy_static = "1.4"
 applink_codec = { path = "../applink_codec" }
-wizzi-common = { git = "ssh://github.com/wizzilab/wizzi-common-rs.git", branch = "master" }
+wizzi-common = { git = "ssh://git@github.com/wizzilab/wizzi-common-rs.git", branch = "master" }
 
 [[example]]
 name = "read_uid"

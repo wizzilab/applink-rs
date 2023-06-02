@@ -2184,7 +2184,7 @@ dependencies = [
 [[package]]
 name = "wizzi-common"
 version = "0.1.0"
-source = "git+ssh://github.com/wizzilab/wizzi-common-rs.git?branch=master#496cd49af82991a35a0a7d33b07bf7288c1bef00"
+source = "git+ssh://git@github.com/wizzilab/wizzi-common-rs.git?branch=master#0b0c27ed641ab6d15a0eaf74504baf5fe0e2151c"
 dependencies = [
  "serde",
  "serde_json",
