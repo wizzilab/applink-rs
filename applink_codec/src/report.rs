@@ -30,8 +30,8 @@ pub mod raw {
     #[derive(Deserialize, Serialize, Debug)]
     #[serde(untagged)]
     pub enum DataValue {
-        PositiveInteger(u64),
-        NegativeInteger(i64),
+        UnsignedInteger(u64),
+        SignedInteger(i64),
         Float(f64),
         Raw { hex: String },
         BitFields(HashMap<String, u64>),
@@ -225,8 +225,8 @@ impl TryFrom<raw::Meta> for Meta {
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum DataValue {
-    PositiveInteger(u64),
-    NegativeInteger(u64),
+    UnsignedInteger(u64),
+    SignedInteger(i64),
     Float(f64),
     Raw(Box<[u8]>),
     BitFields(HashMap<String, u64>),
@@ -235,14 +235,15 @@ pub enum DataValue {
 #[derive(Debug, Clone, PartialEq)]
 pub enum DataValueParseError {
     BadRawHex(hex::FromHexError),
+    BadType,
 }
 
 impl TryFrom<raw::DataValue> for DataValue {
     type Error = DataValueParseError;
     fn try_from(data: raw::DataValue) -> Result<Self, Self::Error> {
         Ok(match data {
-            raw::DataValue::PositiveInteger(n) => Self::PositiveInteger(n),
-            raw::DataValue::NegativeInteger(n) => Self::NegativeInteger(-n as u64),
+            raw::DataValue::UnsignedInteger(n) => Self::UnsignedInteger(n),
+            raw::DataValue::SignedInteger(n) => Self::SignedInteger(n),
             raw::DataValue::Float(f) => Self::Float(f),
             raw::DataValue::Raw { hex } => Self::Raw(
                 hex::decode(hex)
@@ -251,6 +252,56 @@ impl TryFrom<raw::DataValue> for DataValue {
             ),
             raw::DataValue::BitFields(fields) => Self::BitFields(fields),
         })
+    }
+}
+
+impl TryFrom<DataValue> for u64 {
+    type Error = DataValueParseError;
+    fn try_from(data: DataValue) -> Result<Self, Self::Error> {
+        match data {
+            DataValue::UnsignedInteger(n) => Ok(n),
+            _ => Err(DataValueParseError::BadType),
+        }
+    }
+}
+
+impl TryFrom<DataValue> for i64 {
+    type Error = DataValueParseError;
+    fn try_from(data: DataValue) -> Result<Self, Self::Error> {
+        match data {
+            DataValue::SignedInteger(n) => Ok(n),
+            _ => Err(DataValueParseError::BadType),
+        }
+    }
+}
+
+impl TryFrom<DataValue> for f64 {
+    type Error = DataValueParseError;
+    fn try_from(data: DataValue) -> Result<Self, Self::Error> {
+        match data {
+            DataValue::Float(n) => Ok(n),
+            _ => Err(DataValueParseError::BadType),
+        }
+    }
+}
+
+impl TryFrom<DataValue> for Box<[u8]> {
+    type Error = DataValueParseError;
+    fn try_from(data: DataValue) -> Result<Self, Self::Error> {
+        match data {
+            DataValue::Raw(n) => Ok(n),
+            _ => Err(DataValueParseError::BadType),
+        }
+    }
+}
+
+impl TryFrom<DataValue> for HashMap<String, u64> {
+    type Error = DataValueParseError;
+    fn try_from(data: DataValue) -> Result<Self, Self::Error> {
+        match data {
+            DataValue::BitFields(n) => Ok(n),
+            _ => Err(DataValueParseError::BadType),
+        }
     }
 }
 
