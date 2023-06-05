@@ -265,6 +265,16 @@ impl TryFrom<DataValue> for u64 {
     }
 }
 
+impl TryFrom<&DataValue> for u64 {
+    type Error = DataValueParseError;
+    fn try_from(data: &DataValue) -> Result<Self, Self::Error> {
+        match data {
+            DataValue::UnsignedInteger(n) => Ok(*n),
+            _ => Err(DataValueParseError::BadType),
+        }
+    }
+}
+
 impl TryFrom<DataValue> for i64 {
     type Error = DataValueParseError;
     fn try_from(data: DataValue) -> Result<Self, Self::Error> {
@@ -275,11 +285,31 @@ impl TryFrom<DataValue> for i64 {
     }
 }
 
+impl TryFrom<&DataValue> for i64 {
+    type Error = DataValueParseError;
+    fn try_from(data: &DataValue) -> Result<Self, Self::Error> {
+        match data {
+            DataValue::SignedInteger(n) => Ok(*n),
+            _ => Err(DataValueParseError::BadType),
+        }
+    }
+}
+
 impl TryFrom<DataValue> for f64 {
     type Error = DataValueParseError;
     fn try_from(data: DataValue) -> Result<Self, Self::Error> {
         match data {
             DataValue::Float(n) => Ok(n),
+            _ => Err(DataValueParseError::BadType),
+        }
+    }
+}
+
+impl TryFrom<&DataValue> for f64 {
+    type Error = DataValueParseError;
+    fn try_from(data: &DataValue) -> Result<Self, Self::Error> {
+        match data {
+            DataValue::Float(n) => Ok(*n),
             _ => Err(DataValueParseError::BadType),
         }
     }
