@@ -1,10 +1,8 @@
 use crate::uid::Uid;
-use std::collections::HashMap;
 use wizzi_common::json;
 
 pub mod raw {
     use serde::{Deserialize, Serialize};
-    use std::collections::HashMap;
 
     #[derive(Deserialize, Serialize, Debug)]
     pub struct Meta {
@@ -28,19 +26,9 @@ pub mod raw {
     }
 
     #[derive(Deserialize, Serialize, Debug)]
-    #[serde(untagged)]
-    pub enum DataValue {
-        UnsignedInteger(u64),
-        SignedInteger(i64),
-        Float(f64),
-        Raw { hex: String },
-        BitFields(HashMap<String, u64>),
-    }
-
-    #[derive(Deserialize, Serialize, Debug)]
     pub struct KnownReport {
         pub meta: Meta,
-        pub msg: HashMap<String, DataValue>,
+        pub msg: serde_json::Value,
     }
 
     #[derive(Deserialize, Serialize, Debug)]
@@ -59,7 +47,7 @@ pub mod raw {
     #[serde(untagged)]
     pub enum Report {
         Known(KnownReport),
-        Raw(RawReport),
+        Raw(Box<RawReport>),
     }
 }
 
@@ -224,118 +212,6 @@ impl TryFrom<raw::Meta> for Meta {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub enum DataValue {
-    UnsignedInteger(u64),
-    SignedInteger(i64),
-    Float(f64),
-    Raw(Box<[u8]>),
-    BitFields(HashMap<String, u64>),
-}
-
-#[derive(Debug, Clone, PartialEq)]
-pub enum DataValueParseError {
-    BadRawHex(hex::FromHexError),
-    BadType,
-}
-
-impl TryFrom<raw::DataValue> for DataValue {
-    type Error = DataValueParseError;
-    fn try_from(data: raw::DataValue) -> Result<Self, Self::Error> {
-        Ok(match data {
-            raw::DataValue::UnsignedInteger(n) => Self::UnsignedInteger(n),
-            raw::DataValue::SignedInteger(n) => Self::SignedInteger(n),
-            raw::DataValue::Float(f) => Self::Float(f),
-            raw::DataValue::Raw { hex } => Self::Raw(
-                hex::decode(hex)
-                    .map_err(DataValueParseError::BadRawHex)?
-                    .into_boxed_slice(),
-            ),
-            raw::DataValue::BitFields(fields) => Self::BitFields(fields),
-        })
-    }
-}
-
-impl TryFrom<DataValue> for u64 {
-    type Error = DataValueParseError;
-    fn try_from(data: DataValue) -> Result<Self, Self::Error> {
-        match data {
-            DataValue::UnsignedInteger(n) => Ok(n),
-            _ => Err(DataValueParseError::BadType),
-        }
-    }
-}
-
-impl TryFrom<&DataValue> for u64 {
-    type Error = DataValueParseError;
-    fn try_from(data: &DataValue) -> Result<Self, Self::Error> {
-        match data {
-            DataValue::UnsignedInteger(n) => Ok(*n),
-            _ => Err(DataValueParseError::BadType),
-        }
-    }
-}
-
-impl TryFrom<DataValue> for i64 {
-    type Error = DataValueParseError;
-    fn try_from(data: DataValue) -> Result<Self, Self::Error> {
-        match data {
-            DataValue::SignedInteger(n) => Ok(n),
-            _ => Err(DataValueParseError::BadType),
-        }
-    }
-}
-
-impl TryFrom<&DataValue> for i64 {
-    type Error = DataValueParseError;
-    fn try_from(data: &DataValue) -> Result<Self, Self::Error> {
-        match data {
-            DataValue::SignedInteger(n) => Ok(*n),
-            _ => Err(DataValueParseError::BadType),
-        }
-    }
-}
-
-impl TryFrom<DataValue> for f64 {
-    type Error = DataValueParseError;
-    fn try_from(data: DataValue) -> Result<Self, Self::Error> {
-        match data {
-            DataValue::Float(n) => Ok(n),
-            _ => Err(DataValueParseError::BadType),
-        }
-    }
-}
-
-impl TryFrom<&DataValue> for f64 {
-    type Error = DataValueParseError;
-    fn try_from(data: &DataValue) -> Result<Self, Self::Error> {
-        match data {
-            DataValue::Float(n) => Ok(*n),
-            _ => Err(DataValueParseError::BadType),
-        }
-    }
-}
-
-impl TryFrom<DataValue> for Box<[u8]> {
-    type Error = DataValueParseError;
-    fn try_from(data: DataValue) -> Result<Self, Self::Error> {
-        match data {
-            DataValue::Raw(n) => Ok(n),
-            _ => Err(DataValueParseError::BadType),
-        }
-    }
-}
-
-impl TryFrom<DataValue> for HashMap<String, u64> {
-    type Error = DataValueParseError;
-    fn try_from(data: DataValue) -> Result<Self, Self::Error> {
-        match data {
-            DataValue::BitFields(n) => Ok(n),
-            _ => Err(DataValueParseError::BadType),
-        }
-    }
-}
-
-#[derive(Debug, Clone, PartialEq)]
 pub struct RawReportMsg {
     pub offset: u32,
     pub payload: Box<[u8]>,
@@ -360,7 +236,7 @@ impl TryFrom<raw::RawReportMsg> for RawReportMsg {
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum ReportMsg {
-    Known(HashMap<String, DataValue>),
+    Known(serde_json::Value),
     Raw(RawReportMsg),
 }
 
@@ -374,7 +250,6 @@ pub struct Report {
 pub enum ReportParseError {
     Json(json::DecodingError),
     Meta(MetaParseError),
-    Msg(DataValueParseError),
     RawMsg(RawReportMsgParseError),
 }
 
@@ -384,17 +259,7 @@ impl TryFrom<raw::Report> for Report {
         Ok(match report {
             raw::Report::Known(report) => Self {
                 meta: report.meta.try_into().map_err(Self::Error::Meta)?,
-                msg: ReportMsg::Known(
-                    report
-                        .msg
-                        .into_iter()
-                        .map(|(k, v)| match v.try_into() {
-                            Ok(v) => Ok((k, v)),
-                            Err(e) => Err(e),
-                        })
-                        .collect::<Result<HashMap<String, DataValue>, _>>()
-                        .map_err(Self::Error::Msg)?,
-                ),
+                msg: ReportMsg::Known(report.msg),
             },
             raw::Report::Raw(report) => Self {
                 meta: report.meta.try_into().map_err(Self::Error::Meta)?,
