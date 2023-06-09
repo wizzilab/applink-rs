@@ -8,10 +8,10 @@ macro_rules! impl_xml {
     ($xml:ident, $fid:literal, $name:literal) => {
         /// Implement the File trait for $file
         impl $xml {
-            const fn fid() -> u8 {
+            pub const fn fid() -> u8 {
                 $fid
             }
-            const fn name() -> &'static str {
+            pub const fn name() -> &'static str {
                 $name
             }
         }
