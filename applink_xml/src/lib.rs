@@ -62,15 +62,6 @@ pub fn de_char<'de, D: Deserializer<'de>>(deserializer: D) -> Result<char, D::Er
     })
 }
 
-#[derive(Debug, Deserialize, Serialize, IntoPrimitive, TryFromPrimitive)]
-#[repr(u64)]
-pub enum DeviceType {
-    UguardController = 0x01BC50C7FF00001F,
-    UguardPeripheral = 0x01BC50C7FF000020,
-    UguardTag = 0x01BC50C7FF000026,
-    UguardSpot = 0x01BC50C7FF000028,
-}
-
 #[derive(Debug, Clone)]
 pub enum XMLError {
     ParseError((String, u32)),
@@ -85,6 +76,27 @@ impl fmt::Display for XMLError {
         // is very similar to `println!`.
         match self {
             Self::ParseError((file, line)) => write!(f, "{}:{}", file, line),
+        }
+    }
+}
+
+#[derive(Debug, Copy, Clone, Deserialize, Serialize, IntoPrimitive, TryFromPrimitive)]
+#[repr(u64)]
+pub enum DeviceType {
+    UguardController = 0x01BC50C7FF00001F,
+    UguardPeripheral = 0x01BC50C7FF000020,
+    UguardTag = 0x01BC50C7FF000026,
+    UguardSpot = 0x01BC50C7FF000028,
+}
+
+impl DeviceType {
+    // Returns the device binary name
+    pub fn bin(&self) -> String {
+        match self {
+            Self::UguardController => "uguard_controller".to_owned(),
+            Self::UguardPeripheral => "uguard_peripheral".to_owned(),
+            Self::UguardTag => "uguard_tag".to_owned(),
+            Self::UguardSpot => "uguard_spot".to_owned(),
         }
     }
 }
