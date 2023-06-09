@@ -40,6 +40,7 @@ pub struct WmDebug {
     #[serde(deserialize_with = "de_boolean")]
     pub host_present: bool,
     #[serde(rename = "rst_cause")]
+    #[serde(deserialize_with = "de_char")]
     pub boot_cause: char,
     pub active_itf: Option<u32>,
     pub active_itf_fields: Option<ActiveItf>,

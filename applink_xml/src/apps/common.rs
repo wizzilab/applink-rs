@@ -7,6 +7,7 @@ use serde::{Deserialize, Serialize};
 pub struct WmSys {
     pub sys_op_mode: WmSysOpMode,
     #[serde(rename = "sys_boot_cause")]
+    #[serde(deserialize_with = "de_char")]
     pub boot_cause: char,
     #[serde(rename = "sys_assert_count")]
     pub assert_count: u16,

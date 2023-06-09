@@ -26,8 +26,37 @@ macro_rules! impl_xml {
 pub fn de_boolean<'de, D: Deserializer<'de>>(deserializer: D) -> Result<bool, D::Error> {
     Ok(match serde_json::Value::deserialize(deserializer)? {
         serde_json::Value::Bool(b) => b,
-        serde_json::Value::Number(num) => {
-            num.as_i64().ok_or(de::Error::custom("Invalid number"))? != 0
+        serde_json::Value::Number(n) => n.as_i64().ok_or(de::Error::custom("Invalid number"))? != 0,
+        _ => return Err(de::Error::custom("Wrong type, expected boolean")),
+    })
+}
+
+pub fn de_char<'de, D: Deserializer<'de>>(deserializer: D) -> Result<char, D::Error> {
+    Ok(match serde_json::Value::deserialize(deserializer)? {
+        serde_json::Value::Number(n) => {
+            // Extract as u64
+            let n = n.as_u64().ok_or(de::Error::custom("Invalid number"))?;
+
+            // Convert to char
+            char::from_u32(n as u32).ok_or(de::Error::custom("Invalid character"))?
+        }
+        serde_json::Value::Object(s) => {
+            // Extract "hex" key
+            let s = s.get("hex").ok_or(de::Error::custom("No hex key"))?;
+
+            // Convert to slice
+            let s = s
+                .as_str()
+                .ok_or(de::Error::custom("Failed converting to slice"))?;
+
+            // Decode hexadecimal slice
+            let s = hex::decode(s).map_err(|_| de::Error::custom("Failed to decode hex"))?;
+
+            // Extract first byte
+            let s = *s.first().ok_or(de::Error::custom("Empty"))?;
+
+            // Convert to char
+            char::from_u32(s as u32).ok_or(de::Error::custom("Invalid character"))?
         }
         _ => return Err(de::Error::custom("Wrong type, expected boolean")),
     })
