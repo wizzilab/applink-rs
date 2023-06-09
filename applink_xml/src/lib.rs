@@ -3,21 +3,16 @@ pub mod modem;
 
 use serde::{de, Deserialize, Deserializer};
 
-pub trait ApplinkXML {
-    fn fid() -> u8;
-    fn name() -> String;
-}
-
 #[macro_export]
 macro_rules! impl_xml {
     ($xml:ident, $fid:literal, $name:literal) => {
         /// Implement the File trait for $file
-        impl ApplinkXML for $xml {
-            fn fid() -> u8 {
+        impl $xml {
+            const fn fid() -> u8 {
                 $fid
             }
-            fn name() -> String {
-                $name.to_owned()
+            const fn name() -> &'static str {
+                $name
             }
         }
     };
