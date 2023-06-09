@@ -4,7 +4,9 @@ use serde::{Deserialize, Serialize};
 //{"code"=>"30314243353043373030303031303031", "hwv"=>2118404, "fwid"=>144, "fwmaj"=>6, "fwmin"=>3, "fwp"=>300, "fwh"=>2144575652, "maxsize"=>76544}
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct ModemRevision {
-    pub code: String,
+    #[serde(rename = "code")]
+    #[serde(deserialize_with = "de_string_u64")]
+    pub dtype: u64,
     pub hwv: u32,
     pub fwid: u8,
     pub fwmaj: u8,
@@ -19,7 +21,9 @@ impl_xml!(ModemRevision, 2, "modem_version");
 //{"code"=>"30314243353043374646303030303146", "hwv"=>3346433, "fwid"=>131, "fwmaj"=>0, "fwmin"=>6, "fwp"=>115, "fwh"=>477821715, "maxsize"=>163840}
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct HostRevision {
-    pub code: String,
+    #[serde(rename = "code")]
+    #[serde(deserialize_with = "de_string_u64")]
+    pub dtype: u64,
     pub hwv: u32,
     pub fwid: u8,
     pub fwmaj: u8,
@@ -40,7 +44,7 @@ pub struct WmDebug {
     #[serde(deserialize_with = "de_boolean")]
     pub host_present: bool,
     #[serde(rename = "rst_cause")]
-    #[serde(deserialize_with = "de_char")]
+    #[serde(deserialize_with = "de_character")]
     pub boot_cause: char,
     pub active_itf: Option<u32>,
     pub active_itf_fields: Option<ActiveItf>,

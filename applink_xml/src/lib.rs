@@ -31,7 +31,7 @@ pub fn de_boolean<'de, D: Deserializer<'de>>(deserializer: D) -> Result<bool, D:
     })
 }
 
-pub fn de_char<'de, D: Deserializer<'de>>(deserializer: D) -> Result<char, D::Error> {
+pub fn de_character<'de, D: Deserializer<'de>>(deserializer: D) -> Result<char, D::Error> {
     Ok(match serde_json::Value::deserialize(deserializer)? {
         serde_json::Value::Number(n) => {
             // Extract as u64
@@ -58,7 +58,31 @@ pub fn de_char<'de, D: Deserializer<'de>>(deserializer: D) -> Result<char, D::Er
             // Convert to char
             char::from_u32(s as u32).ok_or(de::Error::custom("Invalid character"))?
         }
-        _ => return Err(de::Error::custom("Wrong type, expected boolean")),
+        _ => return Err(de::Error::custom("Wrong type, expected char")),
+    })
+}
+
+pub fn de_string_u64<'de, D: Deserializer<'de>>(deserializer: D) -> Result<u64, D::Error> {
+    Ok(match serde_json::Value::deserialize(deserializer)? {
+        serde_json::Value::Object(s) => {
+            let mut raw: [u8; 8] = [0; 8];
+
+            // Extract "utf8" key
+            let s = s.get("utf8").ok_or(de::Error::custom("No utf8 key"))?;
+
+            // Convert to slice
+            let s = s
+                .as_str()
+                .ok_or(de::Error::custom("Failed converting to slice"))?;
+
+            // Decode hexadecimal slice
+            hex::decode_to_slice(s, &mut raw)
+                .map_err(|_| de::Error::custom("Failed to decode hex"))?;
+
+            // To u64
+            u64::from_be_bytes(raw)
+        }
+        _ => return Err(de::Error::custom("Wrong type, expected string")),
     })
 }
 
