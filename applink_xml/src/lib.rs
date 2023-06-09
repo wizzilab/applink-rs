@@ -1,7 +1,8 @@
 pub mod apps;
 pub mod modem;
 
-use serde::{de, Deserialize, Deserializer};
+use num_enum::{IntoPrimitive, TryFromPrimitive};
+use serde::{de, Deserialize, Deserializer, Serialize};
 
 #[macro_export]
 macro_rules! impl_xml {
@@ -26,4 +27,13 @@ pub fn de_boolean<'de, D: Deserializer<'de>>(deserializer: D) -> Result<bool, D:
         }
         _ => return Err(de::Error::custom("Wrong type, expected boolean")),
     })
+}
+
+#[derive(Debug, Deserialize, Serialize, IntoPrimitive, TryFromPrimitive)]
+#[repr(u64)]
+pub enum DeviceType {
+    UguardController = 0x01BC50C7FF00001F,
+    UguardPeripheral = 0x01BC50C7FF000020,
+    UguardTag = 0x01BC50C7FF000026,
+    UguardSpot = 0x01BC50C7FF000028,
 }
