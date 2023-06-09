@@ -107,6 +107,8 @@ impl fmt::Display for XMLError {
 #[derive(Debug, Copy, Clone, Deserialize, Serialize, IntoPrimitive, TryFromPrimitive)]
 #[repr(u64)]
 pub enum DeviceType {
+    D7AMote = 0x01BC50C700001001,
+    D7AFileSystem = 0x01BC50C700001000,
     UguardController = 0x01BC50C7FF00001F,
     UguardPeripheral = 0x01BC50C7FF000020,
     UguardTag = 0x01BC50C7FF000026,
@@ -115,8 +117,10 @@ pub enum DeviceType {
 
 impl DeviceType {
     // Returns the device binary name
+    // to know where to search for the strbin file
     pub fn bin(&self) -> String {
         match self {
+            Self::D7AMote | Self::D7AFileSystem => "wm".to_owned(),
             Self::UguardController => "uguard_controller".to_owned(),
             Self::UguardPeripheral => "uguard_peripheral".to_owned(),
             Self::UguardTag => "uguard_tag".to_owned(),
