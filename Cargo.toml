@@ -1,5 +1,6 @@
 [workspace]
 members = [
     "applink_client",
-    "applink_codec"
+    "applink_codec",
+    "applink_xml"
 ]
