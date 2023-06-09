@@ -3,6 +3,7 @@ pub mod modem;
 
 use num_enum::{IntoPrimitive, TryFromPrimitive};
 use serde::{de, Deserialize, Deserializer, Serialize};
+use std::fmt;
 
 #[macro_export]
 macro_rules! impl_xml {
@@ -36,4 +37,22 @@ pub enum DeviceType {
     UguardPeripheral = 0x01BC50C7FF000020,
     UguardTag = 0x01BC50C7FF000026,
     UguardSpot = 0x01BC50C7FF000028,
+}
+
+#[derive(Debug, Clone)]
+pub enum XMLError {
+    ParseError((String, u32)),
+}
+
+impl fmt::Display for XMLError {
+    // This trait requires `fmt` with this exact signature.
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        // Write strictly the first element into the supplied output
+        // stream: `f`. Returns `fmt::Result` which indicates whether the
+        // operation succeeded or failed. Note that `write!` uses syntax which
+        // is very similar to `println!`.
+        match self {
+            Self::ParseError((file, line)) => write!(f, "{}:{}", file, line),
+        }
+    }
 }

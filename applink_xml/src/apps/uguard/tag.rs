@@ -1,6 +1,6 @@
+use crate::*;
 use num_enum::{IntoPrimitive, TryFromPrimitive};
 use serde::Deserialize;
-use std::fmt;
 
 #[derive(Debug, Clone)]
 pub struct LogEntryTag {
@@ -135,18 +135,23 @@ pub struct TagLog {
 }
 
 impl TryFrom<serde_json::Value> for TagLogAction {
-    type Error = TagLogError;
+    type Error = XMLError;
     fn try_from(from: serde_json::Value) -> Result<Self, Self::Error> {
         Ok(match from {
             serde_json::Value::Object(o) => {
                 let mut raw: ActionData = [0; 20];
-                let s = o.get("hex").ok_or(TagLogError::ParseError(line!()))?;
-                let s = s.as_str().ok_or(TagLogError::ParseError(line!()))?;
+                let s = o
+                    .get("hex")
+                    .ok_or(XMLError::ParseError((file!().to_owned(), line!())))?;
+                let s = s
+                    .as_str()
+                    .ok_or(XMLError::ParseError((file!().to_owned(), line!())))?;
 
-                hex::decode_to_slice(s, &mut raw).map_err(|_| TagLogError::ParseError(line!()))?;
+                hex::decode_to_slice(s, &mut raw)
+                    .map_err(|_| XMLError::ParseError((file!().to_owned(), line!())))?;
 
-                let action =
-                    ActionEnum::try_from(raw[4]).map_err(|_| TagLogError::ParseError(line!()))?;
+                let action = ActionEnum::try_from(raw[4])
+                    .map_err(|_| XMLError::ParseError((file!().to_owned(), line!())))?;
 
                 match action {
                     ActionEnum::Boot => TagLogAction::Boot(raw.try_into()?),
@@ -163,83 +168,60 @@ impl TryFrom<serde_json::Value> for TagLogAction {
                     ActionEnum::StateStop => TagLogAction::StateStop(raw.try_into()?),
                 }
             }
-            _ => return Err(TagLogError::ParseError(line!())),
+            _ => return Err(XMLError::ParseError((file!().to_owned(), line!()))),
         })
     }
 }
 
-#[derive(Debug, Clone)]
-pub enum TagLogError {
-    BadAction(u32),
-    ParseError(u32),
-}
-
-impl fmt::Display for TagLogError {
-    // This trait requires `fmt` with this exact signature.
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        // Write strictly the first element into the supplied output
-        // stream: `f`. Returns `fmt::Result` which indicates whether the
-        // operation succeeded or failed. Note that `write!` uses syntax which
-        // is very similar to `println!`.
-        write!(f, "{:?}", self)
-    }
-}
-
 impl TryFrom<ActionData> for LogEntryDistance {
-    type Error = TagLogError;
+    type Error = XMLError;
     fn try_from(from: ActionData) -> Result<Self, Self::Error> {
-        let action = ActionEnum::try_from(from[4]).map_err(|_| TagLogError::ParseError(line!()))?;
+        let action = ActionEnum::try_from(from[4])
+            .map_err(|_| XMLError::ParseError((file!().to_owned(), line!())))?;
 
         match action {
             ActionEnum::AlarmOn | ActionEnum::DriverOn | ActionEnum::WarningOn => {
                 let ts = u32::from_le_bytes(
                     from[0..=3]
                         .try_into()
-                        .map_err(|_| TagLogError::ParseError(line!()))?,
+                        .map_err(|_| XMLError::ParseError((file!().to_owned(), line!())))?,
                 );
 
                 let controller_vid: u16 = u16::from_le_bytes(
                     from[5..=6]
                         .try_into()
-                        .map_err(|_| TagLogError::ParseError(line!()))?,
+                        .map_err(|_| XMLError::ParseError((file!().to_owned(), line!())))?,
                 );
 
                 let distance: u8 = u8::from_le(from[7]);
 
-                let tag = [
-                    LogEntryTag {
-                        vid: u16::from_le_bytes(
-                            from[8..=9]
-                                .try_into()
-                                .map_err(|_| TagLogError::ParseError(line!()))?,
-                        ),
-                        distance: u8::from_le(from[10]),
-                    },
-                    LogEntryTag {
-                        vid: u16::from_le_bytes(
-                            from[11..=12]
-                                .try_into()
-                                .map_err(|_| TagLogError::ParseError(line!()))?,
-                        ),
-                        distance: u8::from_le(from[13]),
-                    },
-                    LogEntryTag {
-                        vid: u16::from_le_bytes(
-                            from[14..=15]
-                                .try_into()
-                                .map_err(|_| TagLogError::ParseError(line!()))?,
-                        ),
-                        distance: u8::from_le(from[16]),
-                    },
-                    LogEntryTag {
-                        vid: u16::from_le_bytes(
-                            from[17..=18]
-                                .try_into()
-                                .map_err(|_| TagLogError::ParseError(line!()))?,
-                        ),
-                        distance: u8::from_le(from[19]),
-                    },
-                ];
+                let tag =
+                    [
+                        LogEntryTag {
+                            vid: u16::from_le_bytes(from[8..=9].try_into().map_err(|_| {
+                                XMLError::ParseError((file!().to_owned(), line!()))
+                            })?),
+                            distance: u8::from_le(from[10]),
+                        },
+                        LogEntryTag {
+                            vid: u16::from_le_bytes(from[11..=12].try_into().map_err(|_| {
+                                XMLError::ParseError((file!().to_owned(), line!()))
+                            })?),
+                            distance: u8::from_le(from[13]),
+                        },
+                        LogEntryTag {
+                            vid: u16::from_le_bytes(from[14..=15].try_into().map_err(|_| {
+                                XMLError::ParseError((file!().to_owned(), line!()))
+                            })?),
+                            distance: u8::from_le(from[16]),
+                        },
+                        LogEntryTag {
+                            vid: u16::from_le_bytes(from[17..=18].try_into().map_err(|_| {
+                                XMLError::ParseError((file!().to_owned(), line!()))
+                            })?),
+                            distance: u8::from_le(from[19]),
+                        },
+                    ];
 
                 Ok(LogEntryDistance {
                     ts,
@@ -248,59 +230,61 @@ impl TryFrom<ActionData> for LogEntryDistance {
                     tag,
                 })
             }
-            _ => Err(TagLogError::BadAction(line!())),
+            _ => Err(XMLError::ParseError((file!().to_owned(), line!()))),
         }
     }
 }
 
 impl TryFrom<ActionData> for LogEntryOff {
-    type Error = TagLogError;
+    type Error = XMLError;
     fn try_from(from: ActionData) -> Result<Self, Self::Error> {
-        let action = ActionEnum::try_from(from[4]).map_err(|_| TagLogError::ParseError(line!()))?;
+        let action = ActionEnum::try_from(from[4])
+            .map_err(|_| XMLError::ParseError((file!().to_owned(), line!())))?;
 
         match action {
             ActionEnum::AlarmOff | ActionEnum::DriverOff | ActionEnum::WarningOff => {
                 let ts = u32::from_le_bytes(
                     from[0..=3]
                         .try_into()
-                        .map_err(|_| TagLogError::ParseError(line!()))?,
+                        .map_err(|_| XMLError::ParseError((file!().to_owned(), line!())))?,
                 );
                 Ok(LogEntryOff { ts })
             }
-            _ => Err(TagLogError::BadAction(line!())),
+            _ => Err(XMLError::ParseError((file!().to_owned(), line!()))),
         }
     }
 }
 
 impl TryFrom<ActionData> for LogEntryBoot {
-    type Error = TagLogError;
+    type Error = XMLError;
     fn try_from(from: ActionData) -> Result<Self, Self::Error> {
-        let action = ActionEnum::try_from(from[4]).map_err(|_| TagLogError::ParseError(line!()))?;
+        let action = ActionEnum::try_from(from[4])
+            .map_err(|_| XMLError::ParseError((file!().to_owned(), line!())))?;
 
         match action {
             ActionEnum::Boot => {
                 let ts = u32::from_le_bytes(
                     from[0..=3]
                         .try_into()
-                        .map_err(|_| TagLogError::ParseError(line!()))?,
+                        .map_err(|_| XMLError::ParseError((file!().to_owned(), line!())))?,
                 );
 
-                let reset_cause =
-                    char::from_u32(from[5] as u32).ok_or(TagLogError::ParseError(line!()))?;
+                let reset_cause = char::from_u32(from[5] as u32)
+                    .ok_or(XMLError::ParseError((file!().to_owned(), line!())))?;
                 let assert_count = u16::from_le_bytes(
                     from[6..=7]
                         .try_into()
-                        .map_err(|_| TagLogError::ParseError(line!()))?,
+                        .map_err(|_| XMLError::ParseError((file!().to_owned(), line!())))?,
                 );
                 let last_assert = u32::from_le_bytes(
                     from[8..=11]
                         .try_into()
-                        .map_err(|_| TagLogError::ParseError(line!()))?,
+                        .map_err(|_| XMLError::ParseError((file!().to_owned(), line!())))?,
                 );
                 let last_assert_arg = u32::from_le_bytes(
                     from[12..=15]
                         .try_into()
-                        .map_err(|_| TagLogError::ParseError(line!()))?,
+                        .map_err(|_| XMLError::ParseError((file!().to_owned(), line!())))?,
                 );
 
                 Ok(LogEntryBoot {
@@ -311,15 +295,16 @@ impl TryFrom<ActionData> for LogEntryBoot {
                     last_assert_arg,
                 })
             }
-            _ => Err(TagLogError::BadAction(line!())),
+            _ => Err(XMLError::ParseError((file!().to_owned(), line!()))),
         }
     }
 }
 
 impl TryFrom<ActionData> for LogEntryBattery {
-    type Error = TagLogError;
+    type Error = XMLError;
     fn try_from(from: ActionData) -> Result<Self, Self::Error> {
-        let action = ActionEnum::try_from(from[4]).map_err(|_| TagLogError::ParseError(line!()))?;
+        let action = ActionEnum::try_from(from[4])
+            .map_err(|_| XMLError::ParseError((file!().to_owned(), line!())))?;
 
         match action {
             ActionEnum::BatteryPlugged
@@ -328,38 +313,39 @@ impl TryFrom<ActionData> for LogEntryBattery {
                 let ts = u32::from_le_bytes(
                     from[0..=3]
                         .try_into()
-                        .map_err(|_| TagLogError::ParseError(line!()))?,
+                        .map_err(|_| XMLError::ParseError((file!().to_owned(), line!())))?,
                 );
 
                 let vbat: u16 = u16::from_le_bytes(
                     from[5..=6]
                         .try_into()
-                        .map_err(|_| TagLogError::ParseError(line!()))?,
+                        .map_err(|_| XMLError::ParseError((file!().to_owned(), line!())))?,
                 );
 
                 Ok(LogEntryBattery { ts, vbat })
             }
-            _ => Err(TagLogError::BadAction(line!())),
+            _ => Err(XMLError::ParseError((file!().to_owned(), line!()))),
         }
     }
 }
 
 impl TryFrom<ActionData> for LogEntryState {
-    type Error = TagLogError;
+    type Error = XMLError;
     fn try_from(from: ActionData) -> Result<Self, Self::Error> {
-        let action = ActionEnum::try_from(from[4]).map_err(|_| TagLogError::ParseError(line!()))?;
+        let action = ActionEnum::try_from(from[4])
+            .map_err(|_| XMLError::ParseError((file!().to_owned(), line!())))?;
 
         match action {
             ActionEnum::StateStop | ActionEnum::StateStart => {
                 let ts = u32::from_le_bytes(
                     from[0..=3]
                         .try_into()
-                        .map_err(|_| TagLogError::ParseError(line!()))?,
+                        .map_err(|_| XMLError::ParseError((file!().to_owned(), line!())))?,
                 );
 
                 let state: TagState = from[5]
                     .try_into()
-                    .map_err(|_| TagLogError::ParseError(line!()))?;
+                    .map_err(|_| XMLError::ParseError((file!().to_owned(), line!())))?;
                 let active: bool = from[6] != 0u8;
                 let cup: bool = from[7] != 0u8;
                 let facedown: bool = from[8] != 0u8;
@@ -382,7 +368,7 @@ impl TryFrom<ActionData> for LogEntryState {
                     battery_critical,
                 })
             }
-            _ => Err(TagLogError::BadAction(line!())),
+            _ => Err(XMLError::ParseError((file!().to_owned(), line!()))),
         }
     }
 }

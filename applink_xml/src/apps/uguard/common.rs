@@ -17,11 +17,29 @@ pub struct AppStatus {
 
 #[derive(Debug, Copy, Clone, Deserialize, Serialize, IntoPrimitive, TryFromPrimitive)]
 #[repr(u8)]
+#[serde(try_from = "serde_json::Value")]
 pub enum AppMode {
     Shelf,
     Maintenance,
     Active,
     Test,
+}
+
+impl TryFrom<serde_json::Value> for AppMode {
+    type Error = XMLError;
+    fn try_from(from: serde_json::Value) -> Result<Self, Self::Error> {
+        Ok(match from {
+            serde_json::Value::Number(n) => {
+                let n = n
+                    .as_u64()
+                    .ok_or(XMLError::ParseError((file!().to_owned(), line!())))?
+                    as u8;
+                AppMode::try_from(n)
+                    .map_err(|_| XMLError::ParseError((file!().to_owned(), line!())))?
+            }
+            _ => return Err(XMLError::ParseError((file!().to_owned(), line!()))),
+        })
+    }
 }
 
 #[derive(Debug, Deserialize, Serialize)]

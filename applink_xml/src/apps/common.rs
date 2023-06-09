@@ -18,12 +18,30 @@ pub struct WmSys {
 
 #[derive(Debug, Deserialize, Serialize, IntoPrimitive, TryFromPrimitive)]
 #[repr(u8)]
+#[serde(try_from = "serde_json::Value")]
 pub enum WmSysOpMode {
     Good,
     NoApp,
     NoLibex,
     NoFs,
     NoModem,
+}
+
+impl TryFrom<serde_json::Value> for WmSysOpMode {
+    type Error = XMLError;
+    fn try_from(from: serde_json::Value) -> Result<Self, Self::Error> {
+        Ok(match from {
+            serde_json::Value::Number(n) => {
+                let n = n
+                    .as_u64()
+                    .ok_or(XMLError::ParseError((file!().to_owned(), line!())))?
+                    as u8;
+                WmSysOpMode::try_from(n)
+                    .map_err(|_| XMLError::ParseError((file!().to_owned(), line!())))?
+            }
+            _ => return Err(XMLError::ParseError((file!().to_owned(), line!()))),
+        })
+    }
 }
 
 impl_xml!(WmSys, 255, "sys_status");
