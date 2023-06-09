@@ -134,6 +134,8 @@ pub struct TagLog {
     pub entry_8: Option<TagLogAction>,
 }
 
+impl_xml!(TagLog, 201, "uguard_tag_log");
+
 impl TryFrom<serde_json::Value> for TagLogAction {
     type Error = XMLError;
     fn try_from(from: serde_json::Value) -> Result<Self, Self::Error> {
