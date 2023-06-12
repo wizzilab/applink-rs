@@ -1,4 +1,7 @@
-use applink_client::{codec::wizzi_macro, mqtt::Client};
+use applink_client::{
+    codec::wizzi_macro,
+    mqtt::{Client, Conf},
+};
 use clap::Parser;
 
 #[derive(Parser, Debug)]
@@ -28,7 +31,14 @@ async fn main() {
     let mut options = rumqttc::MqttOptions::new(client_id, "roger.wizzilab.com", 8883);
     options.set_credentials(params.username, params.password);
     options.set_transport(rumqttc::Transport::tls_with_default_config());
-    let mut client = Client::new(options, params.company, 1).await.unwrap();
+    let conf = Conf {
+        mqtt_options: options,
+        subscription_topics: vec![(
+            format!("/applink/{}/macro/response/#", params.company),
+            rumqttc::QoS::AtMostOnce,
+        )],
+    };
+    let mut client = Client::new(conf, params.company, 1).await.unwrap();
 
     println!("Send request");
     let mut response = client.real_time_wizzi_macro(request).await.unwrap();

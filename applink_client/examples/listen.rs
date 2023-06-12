@@ -22,7 +22,9 @@ async fn main() {
     let mut options = rumqttc::MqttOptions::new(params.client_id, "roger.wizzilab.com", 8883);
     options.set_credentials(params.username, params.password);
     options.set_transport(rumqttc::Transport::tls_with_default_config());
-    let mut client = Client::new(options, params.company, 1).await.unwrap();
+    let mut client = Client::new(options.into(), params.company, 1)
+        .await
+        .unwrap();
 
     let mut rx = client.unsolicited().await;
     while let Some(msg) = rx.recv().await {

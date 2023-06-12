@@ -53,17 +53,39 @@ enum MaintainResult {
     Closed,
 }
 
+pub struct Conf {
+    pub mqtt_options: rumqttc::MqttOptions,
+    pub subscription_topics: Vec<(String, rumqttc::QoS)>,
+}
+
+impl From<rumqttc::MqttOptions> for Conf {
+    fn from(mqtt_options: rumqttc::MqttOptions) -> Self {
+        Self {
+            mqtt_options,
+            subscription_topics: Vec::new(),
+        }
+    }
+}
+
 impl ClientBackend {
     async fn new(
-        options: rumqttc::MqttOptions,
+        conf: Conf,
         company: String,
         internal_queue_size: usize,
     ) -> Result<(Self, mpsc::Sender<Command>, mpsc::Receiver<Unsolicited>), rumqttc::ClientError>
     {
-        let (client, mut connection) = rumqttc::AsyncClient::new(options, internal_queue_size);
-        client
-            .subscribe(&format!("/applink/{company}/#"), rumqttc::QoS::AtLeastOnce)
-            .await?;
+        let (client, mut connection) =
+            rumqttc::AsyncClient::new(conf.mqtt_options, internal_queue_size);
+
+        if conf.subscription_topics.is_empty() {
+            client
+                .subscribe(&format!("/applink/{company}/#"), rumqttc::QoS::AtMostOnce)
+                .await?;
+        } else {
+            for (topic, qos) in conf.subscription_topics {
+                client.subscribe(&topic, qos).await?;
+            }
+        }
 
         let (command_tx, command_rx) = mpsc::channel(internal_queue_size);
         let (unsolicited_tx, unsolicited_rx) = mpsc::channel(internal_queue_size);
@@ -255,12 +277,12 @@ pub enum RequestError {
 
 impl Client {
     pub async fn new(
-        options: rumqttc::MqttOptions,
+        conf: Conf,
         company: String,
         internal_queue_size: usize,
     ) -> Result<Self, rumqttc::ClientError> {
         let (backend, command_tx, mut unsolicited_rx) =
-            ClientBackend::new(options, company.clone(), internal_queue_size).await?;
+            ClientBackend::new(conf, company.clone(), internal_queue_size).await?;
         let listeners: Arc<Mutex<Vec<mpsc::Sender<Unsolicited>>>> =
             Arc::new(Mutex::new(Vec::new()));
 
@@ -476,7 +498,7 @@ pub mod test {
         static ref RUNNING: Arc<Mutex<()>> = Arc::new(Mutex::new(()));
     }
 
-    async fn client() -> (Client, TestConfig, MutexGuard<'static, ()>) {
+    async fn client(topics: Vec<&str>) -> (Client, TestConfig, MutexGuard<'static, ()>) {
         #![allow(clippy::await_holding_lock)]
         let lock = RUNNING.lock().unwrap();
 
@@ -487,14 +509,28 @@ pub mod test {
         options.set_credentials(conf.username.clone(), conf.password.clone());
         options.set_transport(rumqttc::Transport::tls_with_default_config());
 
-        let client = Client::new(options, conf.company.clone(), 1).await.unwrap();
+        let client_conf = Conf {
+            mqtt_options: options,
+            subscription_topics: topics
+                .into_iter()
+                .map(|t| {
+                    (
+                        format!("/applink/{}/{}/#", conf.company, t),
+                        rumqttc::QoS::AtMostOnce,
+                    )
+                })
+                .collect(),
+        };
+        let client = Client::new(client_conf, conf.company.clone(), 1)
+            .await
+            .unwrap();
         (client, conf, lock)
     }
 
     #[tokio::test]
     async fn test_read_uid() {
         #![allow(clippy::await_holding_lock)]
-        let (mut client, conf, lock) = client().await;
+        let (mut client, conf, lock) = client(vec!["remotectrl/response"]).await;
 
         let request = remote_control::Request {
             action: remote_control::Action::Read,
@@ -530,7 +566,7 @@ pub mod test {
     #[tokio::test]
     async fn test_wizzi_macro() {
         #![allow(clippy::await_holding_lock)]
-        let (mut client, conf, lock) = client().await;
+        let (mut client, conf, lock) = client(vec!["macro/response"]).await;
         let request = wizzi_macro::Request {
             site_id: conf.site_id,
             user_type: wizzi_macro::Dash7boardPermission::Admin,
