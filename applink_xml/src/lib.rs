@@ -109,22 +109,50 @@ impl fmt::Display for XMLError {
 pub enum DeviceType {
     D7AMote = 0x01BC50C700001001,
     D7AFileSystem = 0x01BC50C700001000,
+    GatewayHost = 0x01BC50C710000000,
+    GatewaySecondaryModem = 0x01BC50C710000001,
+    WBeacon = 0x01BC50C70000003A,
+    Wisense2 = 0x01BC50C7FF000000,
+    Wisp = 0x01BC50C7FF000009,
+    WispLight = 0x01BC50C7FF000023,
+    WoltUWBTag = 0x01BC50C7FF00001C,
+    WoltUWBAnchor = 0x01BC50C7FF00001D,
+    WoltMeter = 0x01BC50C7FF000022,
     UguardController = 0x01BC50C7FF00001F,
     UguardPeripheral = 0x01BC50C7FF000020,
     UguardTag = 0x01BC50C7FF000026,
     UguardSpot = 0x01BC50C7FF000028,
+    MotionConnect = 0x01BC50C7FF00002A,
+    AirConnect = 0x01BC50C7FF00002B,
+    BLEBeaconEddystone = 0x01BC50C7FF00002D,
+    BLEBeaconiBeacon = 0x01BC50C7FF00002E,
+
+    // Non WizziLab
+    WFITag = 0x5A75160477F10000,
 }
 
 impl DeviceType {
-    // Returns the device binary name
-    // to know where to search for the strbin file
-    pub fn bin(&self) -> String {
+    // Returns the device app name
+    // for searching for strbin files
+    pub fn app(&self) -> Option<String> {
         match self {
-            Self::D7AMote | Self::D7AFileSystem => "wm".to_owned(),
-            Self::UguardController => "uguard_controller".to_owned(),
-            Self::UguardPeripheral => "uguard_peripheral".to_owned(),
-            Self::UguardTag => "uguard_tag".to_owned(),
-            Self::UguardSpot => "uguard_spot".to_owned(),
+            Self::D7AMote | Self::D7AFileSystem => Some("wm".to_owned()),
+            Self::GatewaySecondaryModem => Some("gw".to_owned()),
+            Self::WoltUWBTag => Some("wolt_uwb_tag".to_owned()),
+            Self::WoltUWBAnchor => Some("wolt_uwb_anchor".to_owned()),
+            Self::WoltMeter => Some("wolt_uwb_tag".to_owned()), // XXX No dedicated app yet
+            Self::UguardController => Some("uguard_controller".to_owned()),
+            Self::UguardPeripheral => Some("uguard_peripheral".to_owned()),
+            Self::UguardTag => Some("uguard_tag".to_owned()),
+            Self::UguardSpot => Some("uguard_spot".to_owned()),
+            Self::AirConnect => Some("air_connect".to_owned()),
+            Self::MotionConnect => Some("motion_connect".to_owned()),
+            Self::WBeacon => Some("wbeacon".to_owned()),
+            Self::Wisense2 => Some("ws".to_owned()),
+            Self::Wisp => Some("wisp".to_owned()),
+            Self::WispLight => Some("wisp_light".to_owned()),
+            Self::WFITag => Some("wfi_tag".to_owned()),
+            Self::BLEBeaconiBeacon | Self::BLEBeaconEddystone | Self::GatewayHost => None,
         }
     }
 }

@@ -11,3 +11,18 @@ serde = { version = "1.0", features = ["derive"] }
 hex = "0.4"
 wizzi-common = { git = "ssh://git@github.com/wizzilab/wizzi-common-rs.git", branch = "master" }
 num_enum = "0.5"
+
+[dev_dependencies]
+clap = { version = "4", features = ["derive"] }
+colored = "2.0"
+chrono = "0.4"
+rumqttc = "0.20"
+tokio = { version = "1", features = ["full"] }
+tokio-stream = { version = "0.1", features = ["io-util", "fs"] }
+tokio-util = "0.7"
+applink_codec = { path = "../applink_codec" }
+applink_client = { path = "../applink_client" }
+wizzicom = { git = "ssh://git@wizzilab.repositoryhosting.com/wizzilab/wizzicom-rs.git", branch = "master" }
+
+[[example]]
+name = "assert_monitor"
