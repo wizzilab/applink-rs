@@ -18,8 +18,14 @@ log = "0.4"
 rand = "0.8"
 reqwest = { version = "0.11.14", features = ["json"] }
 lazy_static = "1.4"
+lapin = { version = "2", features = ["openssl"] }
+amq-protocol-types = "7"
+futures-lite = "1"
+
 applink_codec = { path = "../applink_codec" }
+
 wizzi-common = { git = "ssh://git@github.com/wizzilab/wizzi-common-rs.git", branch = "master" }
+wizzi-common-tokio = { git = "ssh://git@github.com/wizzilab/wizzi-common-rs.git", branch = "master" }
 
 [[example]]
 name = "read_uid"

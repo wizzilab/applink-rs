@@ -6,6 +6,7 @@
 
 pub use applink_codec as codec;
 
+pub mod amqp;
 pub mod common;
 pub mod http;
 pub mod mqtt;
