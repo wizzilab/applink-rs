@@ -53,8 +53,9 @@ pub fn log(d: &Device, s: String) {
     let naive = NaiveDateTime::from_timestamp_opt(d.last_report.meta.timestamp, 0).unwrap();
     let datetime: DateTime<Local> = Local.from_utc_datetime(&naive);
     let ts = datetime.format("%Y-%m-%d %H:%M:%S").to_string();
+    let dtype = d.dtype.map_or("Unknown".to_owned(), |v| format!("{:?}", v));
 
-    println!("{} | {}: {}", ts, d.uid, s);
+    println!("{} - {} {:<24}: {}", ts, d.uid, dtype, s);
 }
 
 fn bad_report(d: &Device, e: serde_json::Error, msg: &serde_json::Value) {
@@ -148,7 +149,6 @@ fn handle_device(device: &mut Device) {
         ..
     } = device.last_report;
 
-    let msg = device.last_report.msg.clone();
     let fname = device.last_report.meta.fname.clone();
 
     device.dtype = match DeviceType::try_from(u64::from_be(device_type)) {
@@ -166,7 +166,7 @@ fn handle_device(device: &mut Device) {
 
     let file = (&fid, fname.as_str());
 
-    let msg = match msg {
+    let msg = match device.last_report.msg.clone() {
         ReportMsg::Known(m) => m,
         _ => {
             log(
