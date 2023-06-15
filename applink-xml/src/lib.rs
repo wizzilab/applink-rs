@@ -111,9 +111,12 @@ pub enum DeviceType {
     D7AFileSystem = 0x01BC50C700001000,
     GatewayHost = 0x01BC50C710000000,
     GatewaySecondaryModem = 0x01BC50C710000001,
+    GatewayHostHybid = 0x01BC50C710000002,
     WBeacon = 0x01BC50C70000003A,
     Wisense2 = 0x01BC50C7FF000000,
     Wisp = 0x01BC50C7FF000009,
+    WispAir = 0x01BC50C7FF00000A,
+    Wiswitch = 0x01BC50C7FF000015,
     WispLight = 0x01BC50C7FF000023,
     Wult = 0x01BC50C700000032,
     WoltUWBTag = 0x01BC50C7FF00001C,
@@ -129,12 +132,14 @@ pub enum DeviceType {
     BLEBeaconiBeacon = 0x01BC50C7FF00002E,
     AiforsiteAnchor = 0x01BC50C7FF000017,
     LucyTrot = 0x01BC50C7FF007307,
+    WP100 = 0x01BC50C7FF000027,
 
     // Non WizziLab
     WFITag = 0x5A75160477F10000,
     OS200 = 0x0A3EF31F00000200,
     OS300 = 0x0A3EF31F00000300,
     OS110 = 0x0A3EF31F00000400,
+    Kara = 0x13ED6E5F00000014,
 }
 
 impl DeviceType {
@@ -157,14 +162,21 @@ impl DeviceType {
             Self::WBeacon => Some("wbeacon".to_owned()),
             Self::Wisense2 => Some("ws".to_owned()),
             Self::Wisp => Some("wisp".to_owned()),
+            Self::WispAir => Some("wispair".to_owned()),
+            Self::Wiswitch => Some("wiswitch".to_owned()),
             Self::WispLight => Some("wisp_light".to_owned()),
             Self::WFITag => Some("wfi_tag".to_owned()),
             Self::AiforsiteAnchor => Some("aiforsite_anchor".to_owned()),
             Self::OS200 => Some("os200".to_owned()),
             Self::OS300 => Some("os300".to_owned()),
             Self::OS110 => Some("os110".to_owned()),
+            Self::WP100 => Some("wp100".to_owned()),
             Self::LucyTrot => Some("lucy_trot".to_owned()),
-            Self::BLEBeaconiBeacon | Self::BLEBeaconEddystone | Self::GatewayHost => None,
+            Self::BLEBeaconiBeacon
+            | Self::BLEBeaconEddystone
+            | Self::GatewayHost
+            | Self::Kara
+            | Self::GatewayHostHybid => None,
         }
     }
 }
