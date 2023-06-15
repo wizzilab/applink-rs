@@ -115,6 +115,7 @@ pub enum DeviceType {
     Wisense2 = 0x01BC50C7FF000000,
     Wisp = 0x01BC50C7FF000009,
     WispLight = 0x01BC50C7FF000023,
+    Wult = 0x01BC50C700000032,
     WoltUWBTag = 0x01BC50C7FF00001C,
     WoltUWBAnchor = 0x01BC50C7FF00001D,
     WoltMeter = 0x01BC50C7FF000022,
@@ -126,9 +127,14 @@ pub enum DeviceType {
     AirConnect = 0x01BC50C7FF00002B,
     BLEBeaconEddystone = 0x01BC50C7FF00002D,
     BLEBeaconiBeacon = 0x01BC50C7FF00002E,
+    AiforsiteAnchor = 0x01BC50C7FF000017,
+    LucyTrot = 0x01BC50C7FF007307,
 
     // Non WizziLab
     WFITag = 0x5A75160477F10000,
+    OS200 = 0x0A3EF31F00000200,
+    OS300 = 0x0A3EF31F00000300,
+    OS110 = 0x0A3EF31F00000400,
 }
 
 impl DeviceType {
@@ -138,6 +144,7 @@ impl DeviceType {
         match self {
             Self::D7AMote | Self::D7AFileSystem => Some("wm".to_owned()),
             Self::GatewaySecondaryModem => Some("gw".to_owned()),
+            Self::Wult => Some("wult".to_owned()),
             Self::WoltUWBTag => Some("wolt_uwb_tag".to_owned()),
             Self::WoltUWBAnchor => Some("wolt_uwb_anchor".to_owned()),
             Self::WoltMeter => Some("wolt_uwb_tag".to_owned()), // XXX No dedicated app yet
@@ -152,6 +159,11 @@ impl DeviceType {
             Self::Wisp => Some("wisp".to_owned()),
             Self::WispLight => Some("wisp_light".to_owned()),
             Self::WFITag => Some("wfi_tag".to_owned()),
+            Self::AiforsiteAnchor => Some("aiforsite_anchor".to_owned()),
+            Self::OS200 => Some("os200".to_owned()),
+            Self::OS300 => Some("os300".to_owned()),
+            Self::OS110 => Some("os110".to_owned()),
+            Self::LucyTrot => Some("lucy_trot".to_owned()),
             Self::BLEBeaconiBeacon | Self::BLEBeaconEddystone | Self::GatewayHost => None,
         }
     }
