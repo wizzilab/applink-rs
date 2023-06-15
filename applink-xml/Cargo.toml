@@ -1,5 +1,5 @@
 [package]
-name = "applink_xml"
+name = "applink-xml"
 version = "0.1.0"
 edition = "2021"
 
@@ -20,8 +20,8 @@ rumqttc = "0.20"
 tokio = { version = "1", features = ["full"] }
 tokio-stream = { version = "0.1", features = ["io-util", "fs"] }
 tokio-util = "0.7"
-applink_codec = { path = "../applink_codec" }
-applink_client = { path = "../applink_client" }
+applink-codec = { path = "../applink-codec" }
+applink-client = { path = "../applink-client" }
 wizzicom = { git = "ssh://git@wizzilab.repositoryhosting.com/wizzilab/wizzicom-rs.git", branch = "master" }
 
 [[example]]

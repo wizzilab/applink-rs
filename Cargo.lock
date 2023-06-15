@@ -97,10 +97,10 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9c7d0618f0e0b7e8ff11427422b64564d5fb0be1940354bfe2e0529b18a9d9b8"
 
 [[package]]
-name = "applink_client"
+name = "applink-client"
 version = "0.1.0"
 dependencies = [
- "applink_codec",
+ "applink-codec",
  "clap 4.2.5",
  "hex",
  "lazy_static",
@@ -118,7 +118,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "applink_codec"
+name = "applink-codec"
 version = "0.1.0"
 dependencies = [
  "hex",
@@ -128,11 +128,11 @@ dependencies = [
 ]
 
 [[package]]
-name = "applink_xml"
+name = "applink-xml"
 version = "0.1.0"
 dependencies = [
- "applink_client",
- "applink_codec",
+ "applink-client",
+ "applink-codec",
  "chrono",
  "clap 4.2.5",
  "colored",
