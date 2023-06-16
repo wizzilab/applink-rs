@@ -1,4 +1,5 @@
 pub mod apps;
+pub mod d7b;
 pub mod modem;
 
 use num_enum::{IntoPrimitive, TryFromPrimitive};
@@ -100,83 +101,6 @@ impl fmt::Display for XMLError {
         // is very similar to `println!`.
         match self {
             Self::ParseError((file, line)) => write!(f, "{}:{}", file, line),
-        }
-    }
-}
-
-#[derive(Debug, Copy, Clone, Deserialize, Serialize, IntoPrimitive, TryFromPrimitive)]
-#[repr(u64)]
-pub enum DeviceType {
-    D7AMote = 0x01BC50C700001001,
-    D7AFileSystem = 0x01BC50C700001000,
-    GatewayHost = 0x01BC50C710000000,
-    GatewaySecondaryModem = 0x01BC50C710000001,
-    GatewayHostHybid = 0x01BC50C710000002,
-    WBeacon = 0x01BC50C70000003A,
-    Wisense2 = 0x01BC50C7FF000000,
-    Wisp = 0x01BC50C7FF000009,
-    WispAir = 0x01BC50C7FF00000A,
-    Wiswitch = 0x01BC50C7FF000015,
-    WispLight = 0x01BC50C7FF000023,
-    Wult = 0x01BC50C700000032,
-    WoltUWBTag = 0x01BC50C7FF00001C,
-    WoltUWBAnchor = 0x01BC50C7FF00001D,
-    WoltMeter = 0x01BC50C7FF000022,
-    UguardController = 0x01BC50C7FF00001F,
-    UguardPeripheral = 0x01BC50C7FF000020,
-    UguardTag = 0x01BC50C7FF000026,
-    UguardSpot = 0x01BC50C7FF000028,
-    MotionConnect = 0x01BC50C7FF00002A,
-    AirConnect = 0x01BC50C7FF00002B,
-    BLEBeaconEddystone = 0x01BC50C7FF00002D,
-    BLEBeaconiBeacon = 0x01BC50C7FF00002E,
-    AiforsiteAnchor = 0x01BC50C7FF000017,
-    LucyTrot = 0x01BC50C7FF007307,
-    WP100 = 0x01BC50C7FF000027,
-
-    // Non WizziLab
-    WFITag = 0x5A75160477F10000,
-    OS200 = 0x0A3EF31F00000200,
-    OS300 = 0x0A3EF31F00000300,
-    OS110 = 0x0A3EF31F00000400,
-    Kara = 0x13ED6E5F00000014,
-}
-
-impl DeviceType {
-    // Returns the device app name
-    // for searching for strbin files
-    pub fn app(&self) -> Option<String> {
-        match self {
-            Self::D7AMote | Self::D7AFileSystem => Some("wm".to_owned()),
-            Self::GatewaySecondaryModem => Some("gw".to_owned()),
-            Self::Wult => Some("wult".to_owned()),
-            Self::WoltUWBTag => Some("wolt_uwb_tag".to_owned()),
-            Self::WoltUWBAnchor => Some("wolt_uwb_anchor".to_owned()),
-            Self::WoltMeter => Some("wolt_uwb_tag".to_owned()), // XXX No dedicated app yet
-            Self::UguardController => Some("uguard_controller".to_owned()),
-            Self::UguardPeripheral => Some("uguard_peripheral".to_owned()),
-            Self::UguardTag => Some("uguard_tag".to_owned()),
-            Self::UguardSpot => Some("uguard_spot".to_owned()),
-            Self::AirConnect => Some("air_connect".to_owned()),
-            Self::MotionConnect => Some("motion_connect".to_owned()),
-            Self::WBeacon => Some("wbeacon".to_owned()),
-            Self::Wisense2 => Some("ws".to_owned()),
-            Self::Wisp => Some("wisp".to_owned()),
-            Self::WispAir => Some("wispair".to_owned()),
-            Self::Wiswitch => Some("wiswitch".to_owned()),
-            Self::WispLight => Some("wisp_light".to_owned()),
-            Self::WFITag => Some("wfi_tag".to_owned()),
-            Self::AiforsiteAnchor => Some("aiforsite_anchor".to_owned()),
-            Self::OS200 => Some("os200".to_owned()),
-            Self::OS300 => Some("os300".to_owned()),
-            Self::OS110 => Some("os110".to_owned()),
-            Self::WP100 => Some("wp100".to_owned()),
-            Self::LucyTrot => Some("lucy_trot".to_owned()),
-            Self::BLEBeaconiBeacon
-            | Self::BLEBeaconEddystone
-            | Self::GatewayHost
-            | Self::Kara
-            | Self::GatewayHostHybid => None,
         }
     }
 }
