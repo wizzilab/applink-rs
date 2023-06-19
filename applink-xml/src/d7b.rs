@@ -128,7 +128,7 @@ impl DeviceType {
                 WizziLabDevice::WispAir => Some("wispair".to_owned()),
                 WizziLabDevice::Wiswitch => Some("wiswitch".to_owned()),
                 WizziLabDevice::WispLight => Some("wisp_light".to_owned()),
-                WizziLabDevice::AiforsiteAnchor => Some("aiforsite_anchor".to_owned()),
+                WizziLabDevice::AiforsiteAnchor => Some("wolt_aiforsite".to_owned()),
                 WizziLabDevice::WP100 => Some("wp100".to_owned()),
                 WizziLabDevice::LucyTrot => Some("lucy_trot".to_owned()),
                 _ => None,
