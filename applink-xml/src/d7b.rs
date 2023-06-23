@@ -1,7 +1,9 @@
 use num_enum::{IntoPrimitive, TryFromPrimitive};
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Copy, Clone, Deserialize, Serialize, IntoPrimitive, TryFromPrimitive)]
+#[derive(
+    Debug, Copy, Clone, Eq, PartialEq, Deserialize, Serialize, IntoPrimitive, TryFromPrimitive,
+)]
 #[repr(u32)]
 pub enum CompanyID {
     Void = 0x00000000,
@@ -38,7 +40,7 @@ pub enum CompanyID {
     KKRE = 0x7EABEEDE,
 }
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Deserialize, Serialize)]
 pub enum DeviceType {
     Void,
     WizziLab(WizziLabDevice),
@@ -146,7 +148,9 @@ impl DeviceType {
     }
 }
 
-#[derive(Debug, Copy, Clone, Deserialize, Serialize, IntoPrimitive, TryFromPrimitive)]
+#[derive(
+    Debug, Copy, Clone, Eq, PartialEq, Deserialize, Serialize, IntoPrimitive, TryFromPrimitive,
+)]
 #[repr(u32)]
 pub enum WizziLabDevice {
     GatewayModem = 0x00000000,
@@ -250,7 +254,9 @@ pub enum WizziLabDevice {
     NRF91FS = 0xFF025F91,
 }
 
-#[derive(Debug, Copy, Clone, Deserialize, Serialize, IntoPrimitive, TryFromPrimitive)]
+#[derive(
+    Debug, Copy, Clone, Eq, PartialEq, Deserialize, Serialize, IntoPrimitive, TryFromPrimitive,
+)]
 #[repr(u32)]
 pub enum OneSituDevice {
     OS200 = 0x00000200,
@@ -258,7 +264,9 @@ pub enum OneSituDevice {
     OS110 = 0x00000400,
 }
 
-#[derive(Debug, Copy, Clone, Deserialize, Serialize, IntoPrimitive, TryFromPrimitive)]
+#[derive(
+    Debug, Copy, Clone, Eq, PartialEq, Deserialize, Serialize, IntoPrimitive, TryFromPrimitive,
+)]
 #[repr(u32)]
 pub enum KawantechDevice {
     Device = 0x00000000,
@@ -267,13 +275,17 @@ pub enum KawantechDevice {
     DeviceK = 0x0000701D,
 }
 
-#[derive(Debug, Copy, Clone, Deserialize, Serialize, IntoPrimitive, TryFromPrimitive)]
+#[derive(
+    Debug, Copy, Clone, Eq, PartialEq, Deserialize, Serialize, IntoPrimitive, TryFromPrimitive,
+)]
 #[repr(u32)]
 pub enum WiFindItDevice {
     WFITag = 0x77F10000,
 }
 
-#[derive(Debug, Copy, Clone, Deserialize, Serialize, IntoPrimitive, TryFromPrimitive)]
+#[derive(
+    Debug, Copy, Clone, Eq, PartialEq, Deserialize, Serialize, IntoPrimitive, TryFromPrimitive,
+)]
 #[repr(u32)]
 pub enum ReachTechnologyDevice {
     WizziGatePyHost = 0x00000000,

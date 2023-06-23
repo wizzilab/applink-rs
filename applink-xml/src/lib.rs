@@ -2,8 +2,7 @@ pub mod apps;
 pub mod d7b;
 pub mod modem;
 
-use num_enum::{IntoPrimitive, TryFromPrimitive};
-use serde::{de, Deserialize, Deserializer, Serialize};
+use serde::{de, Deserialize, Deserializer};
 use std::fmt;
 
 #[macro_export]

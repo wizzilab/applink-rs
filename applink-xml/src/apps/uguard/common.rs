@@ -3,7 +3,7 @@ use num_enum::{IntoPrimitive, TryFromPrimitive};
 use serde::{Deserialize, Serialize};
 
 //{"uguard_app_status_mode"=>2, "uguard_app_status_errors"=>0, "uguard_app_status_errors_fields"=>{"libex"=>0, "motion_axl"=>0, "motion_mag"=>0, "sensor"=>0, "ext_i2c"=>0, "ext_spi"=>0}, "uguard_app_status_vbat"=>4079}
-#[derive(Debug, Copy, Clone, Deserialize, Serialize)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Deserialize, Serialize)]
 pub struct AppStatus {
     #[serde(rename = "uguard_app_status_mode")]
     pub mode: AppMode,
@@ -15,7 +15,9 @@ pub struct AppStatus {
     pub vbat: u16,
 }
 
-#[derive(Debug, Copy, Clone, Deserialize, Serialize, IntoPrimitive, TryFromPrimitive)]
+#[derive(
+    Debug, Copy, Clone, Eq, PartialEq, Deserialize, Serialize, IntoPrimitive, TryFromPrimitive,
+)]
 #[repr(u8)]
 #[serde(try_from = "serde_json::Value")]
 pub enum AppMode {
@@ -42,7 +44,7 @@ impl TryFrom<serde_json::Value> for AppMode {
     }
 }
 
-#[derive(Debug, Copy, Clone, Deserialize, Serialize)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Deserialize, Serialize)]
 pub struct AppStatusError {
     #[serde(deserialize_with = "de_boolean")]
     pub libex: bool,
