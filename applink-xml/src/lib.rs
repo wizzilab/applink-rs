@@ -40,6 +40,9 @@ pub fn de_character<'de, D: Deserializer<'de>>(deserializer: D) -> Result<char, 
             // Convert to char
             char::from_u32(n as u32).ok_or(de::Error::custom("Invalid character"))?
         }
+        serde_json::Value::String(s) => {
+            s.chars().next().ok_or(de::Error::custom("Empty string"))?
+        }
         serde_json::Value::Object(s) => {
             // Extract "hex" key
             let s = s.get("hex").ok_or(de::Error::custom("No hex key"))?;
@@ -64,6 +67,10 @@ pub fn de_character<'de, D: Deserializer<'de>>(deserializer: D) -> Result<char, 
 
 pub fn de_string_u64<'de, D: Deserializer<'de>>(deserializer: D) -> Result<u64, D::Error> {
     Ok(match serde_json::Value::deserialize(deserializer)? {
+        serde_json::Value::Number(n) => {
+            // Extract as u64
+            n.as_u64().ok_or(de::Error::custom("Invalid number"))?
+        }
         serde_json::Value::Object(s) => {
             let mut raw: [u8; 8] = [0; 8];
 

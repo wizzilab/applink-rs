@@ -1,4 +1,5 @@
 use crate::codec::{remote_control, report, wizzi_macro};
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::{mpsc, Mutex};
@@ -12,7 +13,7 @@ macro_rules! p_debug {
     };
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Hash, Eq, PartialEq, Deserialize, Serialize)]
 pub enum Command {
     Publish { topic: String, data: Vec<u8> },
 }

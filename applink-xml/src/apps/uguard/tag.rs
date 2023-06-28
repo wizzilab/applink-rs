@@ -1,8 +1,8 @@
 use crate::*;
 use num_enum::{IntoPrimitive, TryFromPrimitive};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Copy, Clone, Eq, PartialEq)]
+#[derive(Debug, Copy, Clone, Hash, Eq, PartialEq, Deserialize, Serialize)]
 pub struct LogEntryTag {
     /// VID
     pub vid: u16,
@@ -10,7 +10,7 @@ pub struct LogEntryTag {
     pub distance: u8,
 }
 
-#[derive(Debug, Copy, Clone, Eq, PartialEq)]
+#[derive(Debug, Copy, Clone, Hash, Eq, PartialEq, Deserialize, Serialize)]
 pub struct LogEntryDistance {
     /// Timestamp
     pub ts: u32,
@@ -22,13 +22,13 @@ pub struct LogEntryDistance {
     pub tag: [LogEntryTag; 4],
 }
 
-#[derive(Debug, Copy, Clone, Eq, PartialEq)]
+#[derive(Debug, Copy, Clone, Hash, Eq, PartialEq, Deserialize, Serialize)]
 pub struct LogEntryOff {
     /// Timestamp
     pub ts: u32,
 }
 
-#[derive(Debug, Copy, Clone, Eq, PartialEq)]
+#[derive(Debug, Copy, Clone, Hash, Eq, PartialEq, Deserialize, Serialize)]
 pub struct LogEntryBoot {
     /// Timestamp
     pub ts: u32,
@@ -42,7 +42,7 @@ pub struct LogEntryBoot {
     pub last_assert_arg: u32,
 }
 
-#[derive(Debug, Copy, Clone, Eq, PartialEq)]
+#[derive(Debug, Copy, Clone, Hash, Eq, PartialEq, Deserialize, Serialize)]
 pub struct LogEntryBattery {
     /// Timestamp
     pub ts: u32,
@@ -50,7 +50,7 @@ pub struct LogEntryBattery {
     pub vbat: u16,
 }
 
-#[derive(Debug, Copy, Clone, Eq, PartialEq)]
+#[derive(Debug, Copy, Clone, Hash, Eq, PartialEq, Deserialize, Serialize)]
 pub struct LogEntryState {
     /// Timestamp
     pub ts: u32,
@@ -65,7 +65,9 @@ pub struct LogEntryState {
     pub battery_critical: bool,
 }
 
-#[derive(Debug, Copy, Clone, Eq, PartialEq, IntoPrimitive, TryFromPrimitive)]
+#[derive(
+    Debug, Copy, Clone, Hash, Eq, PartialEq, Deserialize, Serialize, IntoPrimitive, TryFromPrimitive,
+)]
 #[repr(u8)]
 pub enum TagState {
     Ok,
@@ -73,7 +75,9 @@ pub enum TagState {
     Stopped,
 }
 
-#[derive(Debug, Copy, Clone, Eq, PartialEq, IntoPrimitive, TryFromPrimitive, Deserialize)]
+#[derive(
+    Debug, Copy, Clone, Hash, Eq, PartialEq, Deserialize, Serialize, IntoPrimitive, TryFromPrimitive,
+)]
 #[repr(u8)]
 pub enum ActionEnum {
     Boot,
@@ -90,7 +94,7 @@ pub enum ActionEnum {
     StateStop,
 }
 
-#[derive(Debug, Copy, Clone, Eq, PartialEq, Deserialize)]
+#[derive(Debug, Copy, Clone, Hash, Eq, PartialEq, Deserialize, Serialize)]
 #[serde(try_from = "serde_json::Value")]
 pub enum TagLogAction {
     Boot(LogEntryBoot),
@@ -110,7 +114,7 @@ pub enum TagLogAction {
 type ActionData = [u8; 20];
 
 //{"uguard_tag_log_remaining"=>0, "uguard_tag_log_0_ts"=>1686146781, "uguard_tag_log_0_action"=>6, "uguard_tag_log_0_data"=>"FFFF00000000000000000000000000", "uguard_tag_log_1_ts"=>1686146781, "uguard_tag_log_1_action"=>4, "uguard_tag_log_1_data"=>"FFFF00000000000000000000000000", "uguard_tag_log_2_ts"=>1686146794, "uguard_tag_log_2_action"=>8, "uguard_tag_log_2_data"=>"E30F00000000000000000000000000", "uguard_tag_log_3_ts"=>1686146794, "uguard_tag_log_3_action"=>10, "uguard_tag_log_3_data"=>"000100000101010000000000000000", "uguard_tag_log_4_ts"=>1686146795, "uguard_tag_log_4_action"=>5, "uguard_tag_log_4_data"=>"1A00071C000A000000000000000000", "uguard_tag_log_5_ts"=>1686146795, "uguard_tag_log_5_action"=>3, "uguard_tag_log_5_data"=>"1A00071C000A000000000000000000", "uguard_tag_log_6_ts"=>1686147160, "uguard_tag_log_6_action"=>7, "uguard_tag_log_6_data"=>"E80F00000000000000000000000000", "uguard_tag_log_7_ts"=>1686147160, "uguard_tag_log_7_action"=>11, "uguard_tag_log_7_data"=>"020100000101000100000000000000"}
-#[derive(Debug, Copy, Clone, Eq, PartialEq, Deserialize)]
+#[derive(Debug, Copy, Clone, Hash, Eq, PartialEq, Deserialize, Serialize)]
 pub struct TagLog {
     #[serde(rename = "uguard_tag_log_remaining")]
     pub remaining: u16,

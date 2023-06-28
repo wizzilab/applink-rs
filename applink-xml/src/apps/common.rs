@@ -42,6 +42,8 @@ impl TryFrom<serde_json::Value> for WmSysOpMode {
                 WmSysOpMode::try_from(n)
                     .map_err(|_| XMLError::ParseError((file!().to_owned(), line!())))?
             }
+            serde_json::Value::String(_) => WmSysOpMode::try_from(from)
+                .map_err(|_| XMLError::ParseError((file!().to_owned(), line!())))?,
             _ => return Err(XMLError::ParseError((file!().to_owned(), line!()))),
         })
     }

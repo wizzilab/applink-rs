@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use wizzi_common::json;
 
-#[derive(Serialize, Debug, Deserialize, Clone, PartialEq)]
+#[derive(Debug, Clone, Hash, Eq, PartialEq, Deserialize, Serialize)]
 pub struct Meta {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub uid: Option<String>,

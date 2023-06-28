@@ -1,10 +1,11 @@
 use crate::uid::Uid;
+use serde::{Deserialize, Serialize};
 use wizzi_common::json;
 
 pub mod raw {
-    use serde::{Deserialize, Serialize};
+    use super::*;
 
-    #[derive(Deserialize, Serialize, Debug)]
+    #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
     pub struct Meta {
         pub uid: String,
         pub guid: String,
@@ -25,25 +26,25 @@ pub mod raw {
         pub timestamp: i64,
     }
 
-    #[derive(Deserialize, Serialize, Debug)]
+    #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
     pub struct KnownReport {
         pub meta: Meta,
         pub msg: serde_json::Value,
     }
 
-    #[derive(Deserialize, Serialize, Debug)]
+    #[derive(Debug, Clone, Hash, Eq, PartialEq, Deserialize, Serialize)]
     pub struct RawReportMsg {
         pub offset: u32,
         pub payload: String,
     }
 
-    #[derive(Deserialize, Serialize, Debug)]
+    #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
     pub struct RawReport {
         pub meta: Meta,
         pub rmsg: RawReportMsg,
     }
 
-    #[derive(Deserialize, Debug)]
+    #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
     #[serde(untagged)]
     pub enum Report {
         Known(KnownReport),
@@ -52,7 +53,7 @@ pub mod raw {
 }
 
 #[repr(u8)]
-#[derive(Debug, Copy, Clone, Hash, Eq, PartialEq)]
+#[derive(Debug, Copy, Clone, Hash, Eq, PartialEq, Deserialize, Serialize)]
 pub enum SecurityStatus {
     BelowExpectations = 1,
     MatchingExpectations = 2,
@@ -75,7 +76,7 @@ impl TryFrom<u8> for SecurityStatus {
 }
 
 #[repr(u8)]
-#[derive(Debug, Copy, Clone, Hash, Eq, PartialEq)]
+#[derive(Debug, Copy, Clone, Hash, Eq, PartialEq, Deserialize, Serialize)]
 pub enum AcceptationStatus {
     Accepted = 0,
     AcceptableRepeat = 1,
@@ -104,7 +105,7 @@ impl TryFrom<u8> for AcceptationStatus {
 }
 
 #[repr(u8)]
-#[derive(Debug, Copy, Clone, Hash, Eq, PartialEq)]
+#[derive(Debug, Copy, Clone, Hash, Eq, PartialEq, Deserialize, Serialize)]
 pub enum Lqual {
     L0 = 0,
     L1 = 1,
@@ -130,7 +131,7 @@ impl TryFrom<u8> for Lqual {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 pub struct Meta {
     pub uid: Uid,
     pub guid: Uid,
@@ -151,7 +152,7 @@ pub struct Meta {
     pub timestamp: i64,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub enum MetaParseError {
     BadDeviceType(std::num::ParseIntError),
     BadLqual(u8),
@@ -211,13 +212,13 @@ impl TryFrom<raw::Meta> for Meta {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, Hash, Eq, PartialEq, Deserialize, Serialize)]
 pub struct RawReportMsg {
     pub offset: u32,
     pub payload: Box<[u8]>,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, Hash, Eq, PartialEq, Deserialize, Serialize)]
 pub enum RawReportMsgParseError {
     NonHexPayload(String),
 }
@@ -234,13 +235,13 @@ impl TryFrom<raw::RawReportMsg> for RawReportMsg {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, Eq, PartialEq, Deserialize, Serialize)]
 pub enum ReportMsg {
     Known(serde_json::Value),
     Raw(RawReportMsg),
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 pub struct Report {
     pub meta: Meta,
     pub msg: ReportMsg,
@@ -269,13 +270,13 @@ impl TryFrom<raw::Report> for Report {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 pub struct RawReport {
     pub meta: Meta,
     pub rmsg: RawReportMsg,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub enum RawReportParseError {
     Meta(MetaParseError),
     Rmsg(RawReportMsgParseError),

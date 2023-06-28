@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use std::convert::TryFrom;
 use wizzi_common::json;
 
-#[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
+#[derive(Debug, Clone, Hash, Eq, PartialEq, Deserialize, Serialize)]
 pub struct Meta {
     pub rid: String,
 }
@@ -11,7 +11,7 @@ pub mod raw {
     use super::*;
     use serde::{Deserialize, Serialize};
 
-    #[derive(Debug, Serialize, Deserialize, PartialEq, Clone, Copy)]
+    #[derive(Debug, Copy, Clone, Hash, Eq, PartialEq, Deserialize, Serialize)]
     #[serde(rename_all = "UPPERCASE")]
     pub enum Status {
         Start,
@@ -19,14 +19,14 @@ pub mod raw {
         Err,
     }
 
-    #[derive(Debug, Serialize, Deserialize, PartialEq, Clone, Copy)]
+    #[derive(Debug, Copy, Clone, Hash, Eq, PartialEq, Deserialize, Serialize)]
     #[serde(rename_all = "UPPERCASE")]
     pub enum Dstatus {
         Ok,
         Error,
     }
 
-    #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
+    #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
     #[serde(tag = "type")]
     #[serde(rename_all = "UPPERCASE")]
     pub enum Message {
@@ -43,21 +43,21 @@ pub mod raw {
             err: Option<String>,
         },
     }
-    #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
+    #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
     pub struct Response {
         pub meta: Meta,
         pub msg: Message,
     }
 }
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, Clone, Hash, Eq, PartialEq, Deserialize, Serialize)]
 pub enum Status {
     Start,
     End,
     Err { err: String },
 }
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 pub enum Message {
     Status { status: Status },
     Log { progress: f64 },
@@ -65,7 +65,7 @@ pub enum Message {
     DstatusError { uid: String, err: String },
 }
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 pub struct Response {
     pub meta: Meta,
     pub msg: Message,

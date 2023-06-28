@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-#[derive(Clone, PartialEq, Eq, Hash)]
+#[derive(Clone, Hash, Eq, PartialEq)]
 pub enum Uid {
     Dash7(wizzi_common::dash7::Uid),
     Vgw(String),

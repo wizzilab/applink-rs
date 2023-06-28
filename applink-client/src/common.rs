@@ -2,7 +2,7 @@
 pub(crate) mod test {
     use serde::Deserialize;
 
-    #[derive(Deserialize, Debug, Clone)]
+    #[derive(Debug, Clone, Hash, Eq, PartialEq, Deserialize, Serialize)]
     pub(crate) struct TestConfig {
         pub(crate) http_server: String,
         pub(crate) roger_server: String,

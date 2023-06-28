@@ -2,14 +2,14 @@ use crate::codec::uid::Uid;
 use serde::{Deserialize, Serialize};
 use wizzi_common::json;
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, Hash, Eq, PartialEq, Deserialize, Serialize)]
 pub struct Credentials {
     pub server: String,
     pub username: String,
     pub password: String,
 }
 
-#[derive(Debug, Clone, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Hash, Eq, PartialEq, Deserialize, Serialize)]
 #[serde(tag = "status")]
 enum RawSiteDevices {
     #[serde(rename = "ok")]
@@ -18,7 +18,7 @@ enum RawSiteDevices {
     Err { msg: String },
 }
 
-#[derive(Debug, Clone, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Hash, Eq, PartialEq, Deserialize, Serialize)]
 pub struct DeviceInfos {
     pub uid: Uid,
     pub site_id: Option<usize>,
@@ -34,7 +34,7 @@ pub struct DeviceInfos {
     pub mhv: Option<String>,
 }
 
-#[derive(Debug, Clone, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Hash, Eq, PartialEq, Deserialize, Serialize)]
 #[serde(tag = "status")]
 pub enum RawDevicesInfos {
     #[serde(rename = "ok")]
@@ -43,7 +43,7 @@ pub enum RawDevicesInfos {
     Err { msg: String },
 }
 
-#[derive(Debug, Clone, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Hash, Eq, PartialEq, Deserialize, Serialize)]
 #[serde(tag = "status")]
 pub enum RawDeviceTags {
     #[serde(rename = "ok")]
